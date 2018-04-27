@@ -570,9 +570,9 @@ void FilterDocSampling::initParameterSet(QAction *action, MeshDocument & md, Ric
 			"It is quite probably the the farthest points falls along edges or on mesh vertexes, and with uniform montecarlo sampling approaches"
 			"the probability of taking a sample over a vertex or an edge is theoretically null.<br>"
 			"On the other hand this kind of sampling could make the overall sampling distribution slightly biased and slightly affects the cumulative results."));
-		parlst.addParam(new RichBool("SampleEdge", true, "Sample Edges", "See the above comment."));
+		parlst.addParam(new RichBool("SampleEdge", false, "Sample Edges", "See the above comment."));
 		parlst.addParam(new RichBool("SampleFauxEdge", false, "Sample FauxEdge", "See the above comment."));
-		parlst.addParam(new RichBool("SampleFace", true, "Sample Faces", "See the above comment."));
+		parlst.addParam(new RichBool("SampleFace", false, "Sample Faces", "See the above comment."));
 		parlst.addParam(new RichInt("SampleNum", md.mm()->cm.vn, "Number of samples",
 			"The desired number of samples. It can be smaller or larger than the mesh size, and according to the choosed sampling strategy it will try to adapt."));
 		parlst.addParam(new RichAbsPerc("MaxDist", md.mm()->cm.bbox.Diag() / 2.0, 0.0f, md.bbox().Diag(),
@@ -728,8 +728,8 @@ switch(ID(action))
 	{
 		MeshModel *curMM= md.mm();
 		if (!tri::HasPerWedgeTexCoord(curMM->cm)) {
-			Log("Texel Sampling requires a mesh with UV parametrization");
-			errorMessage = "Texel Sampling requires a mesh with UV parametrization";
+			Log("Texel Sampling requires a mesh with Per Wedge UV parametrization");
+			errorMessage = "Texel Sampling requires a mesh with Per Wedge UV parametrization";
 			return false; // can't continue, mesh can't be processed
 		}
 
@@ -1024,7 +1024,7 @@ switch(ID(action))
 		float distUpperBound = par.getAbsPerc("MaxDist");
 
 		if (mm0 == mm1){
-			Log("Housdorff Distance: cannot compute, it is the same mesh");
+			Log("Hausdorff Distance: cannot compute, it is the same mesh");
 			errorMessage = "Cannot compute, it is the same mesh";
 			return false; // can't continue, mesh can't be processed
 		}
@@ -1375,12 +1375,20 @@ MeshFilterInterface::FilterClass FilterDocSampling::getClass(QAction *action)
 }
 int FilterDocSampling::postCondition( QAction* a ) const
 {
-  switch(ID(a)){
-  case FP_VORONOI_COLORING:
-  case FP_DISK_COLORING:
-    return MeshModel::MM_VERTCOLOR;
+	switch(ID(a)){
+		case FP_VORONOI_COLORING    :
+		case FP_DISK_COLORING       : return MeshModel::MM_VERTCOLOR;
+
+		case FP_ELEMENT_SUBSAMPLING       :
+		case FP_MONTECARLO_SAMPLING       :
+		case FP_STRATIFIED_SAMPLING       :
+		case FP_CLUSTERED_SAMPLING        :
+		case FP_POINTCLOUD_SIMPLIFICATION :
+		case FP_POISSONDISK_SAMPLING      : 
+		case FP_TEXEL_SAMPLING            :			
+		case FP_UNIFORM_MESH_RESAMPLING   : return MeshModel::MM_NONE;  // none, because they create a new layer, without affecting old one
   }
-  return MeshModel::MM_UNKNOWN;
+  return MeshModel::MM_ALL;
 }
 
 MeshFilterInterface::FILTER_ARITY FilterDocSampling::filterArity( QAction * filter ) const

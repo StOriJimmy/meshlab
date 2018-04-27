@@ -50,18 +50,14 @@ public:
         FP_REMOVE_DUPLICATE_FACE,
         FP_REMOVE_NON_MANIF_EDGE,
         FP_REMOVE_NON_MANIF_VERT,
+		FP_REMOVE_UNREFERENCED_VERTEX,
+		FP_REMOVE_DUPLICATED_VERTEX,
+		FP_REMOVE_FACE_ZERO_AREA,
         FP_MERGE_CLOSE_VERTEX,
         FP_MERGE_WEDGE_TEX,
         FP_COMPACT_VERT,
         FP_COMPACT_FACE
     } ;
-
-    /* default values for standard parameters' values of the plugin actions */
-    float maxDiag1;
-    float maxDiag2;
-    int minCC;
-    float val1;
-
 
     CleanFilter();
     ~CleanFilter();

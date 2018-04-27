@@ -841,6 +841,7 @@ void MainWindow::runFilterScript()
     {
         QString filtnm = (*ii)->filterName();
         int classes = 0;
+		int postCondMask = 0;
         if (!(*ii)->isXMLFilter())
         {
             QAction *action = PM.actionFilterMap[ filtnm];
@@ -925,11 +926,14 @@ void MainWindow::runFilterScript()
             //WARNING!!!!!!!!!!!!
             /* to be changed */
             iFilter->applyFilter( action, *meshDoc(), old->pair.second, QCallBack );
+			for (MeshModel* mm = meshDoc()->nextMesh(); mm != NULL; mm = meshDoc()->nextMesh(mm))
+				vcg::tri::Allocator<CMeshO>::CompactEveryVector(mm->cm);
             meshDoc()->setBusy(false);
             if (shar != NULL)
                 shar->removeView(iFilter->glContext); 
             delete iFilter->glContext;
             classes = int(iFilter->getClass(action));
+			postCondMask = iFilter->postCondition(action);
         }
         else
         {
@@ -1025,6 +1029,8 @@ void MainWindow::runFilterScript()
                     /* IT SHOULD INVOKE executeFilter function. Unfortunately this function create a different thread for each invoked filter, and the MeshLab synchronization mechanisms are quite naive. Better to invoke the filters list in the same thread*/
                     meshDoc()->setBusy(true);
                     cppfilt->applyFilter( filtnm, *meshDoc(), envwrap, QCallBack );
+					for (MeshModel* mm = meshDoc()->nextMesh(); mm != NULL; mm = meshDoc()->nextMesh(mm))
+						vcg::tri::Allocator<CMeshO>::CompactEveryVector(mm->cm);
                     meshDoc()->setBusy(false);
                     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                     if ((currentViewContainer() != NULL) && (currentViewContainer()->sharedDataContext() != NULL))
@@ -1032,9 +1038,11 @@ void MainWindow::runFilterScript()
                     delete cppfilt->glContext;
                     GLA()->completeUpdateRequested();
                     connect(meshDoc(),SIGNAL(documentUpdated()),GLA(),SLOT(completeUpdateRequested()));
-                    /* executeFilter(&cont,*env);*/
                     QStringList filterClassesList = cont.xmlInfo->filterAttribute(filtnm,MLXMLElNames::filterClass).split(QRegExp("\\W+"), QString::SkipEmptyParts);
                     classes = MeshLabFilterInterface::convertStringListToCategoryEnum(filterClassesList);
+					QString postCond = cont.xmlInfo->filterAttribute(filtnm, MLXMLElNames::filterPostCond);
+					QStringList postCondList = postCond.split(QRegExp("\\W+"), QString::SkipEmptyParts);
+					postCondMask = MeshLabFilterInterface::convertStringListToMeshElementEnum(postCondList);
                 }
                 else
                     throw MLException("WARNING! The MeshLab Script System is able to manage just the C++ XML filters.");
@@ -1048,23 +1056,27 @@ void MainWindow::runFilterScript()
         {
             if(classes & MeshFilterInterface::FaceColoring )
             {
-//GLA()->setColorMode(vcg::GLW::CMPerFace);
                 meshDoc()->mm()->updateDataMask(MeshModel::MM_FACECOLOR);
             }
-            if(classes & MeshFilterInterface::VertexColoring ){
-//GLA()->setColorMode(vcg::GLW::CMPerVert);
+            if(classes & MeshFilterInterface::VertexColoring )
+			{
                 meshDoc()->mm()->updateDataMask(MeshModel::MM_VERTCOLOR);
             }
             if(classes & MeshModel::MM_COLOR)
             {
-//GLA()->setColorMode(vcg::GLW::CMPerMesh);
                 meshDoc()->mm()->updateDataMask(MeshModel::MM_COLOR);
             }
             if(classes & MeshModel::MM_CAMERA)
                 meshDoc()->mm()->updateDataMask(MeshModel::MM_CAMERA);
         }
 
-        if(classes & MeshFilterInterface::MeshCreation )
+		bool newmeshcreated = false;
+		if (classes & MeshFilterInterface::MeshCreation)
+			newmeshcreated = true;
+		updateSharedContextDataAfterFilterExecution(postCondMask, classes, newmeshcreated);
+		meshDoc()->meshDocStateData().clear();
+
+        if(classes & MeshFilterInterface::MeshCreation)
             GLA()->resetTrackBall();
         /* to be changed */
 
@@ -1414,7 +1426,7 @@ from the user defined dialog
 
 void MainWindow::executeFilter(QAction *action, RichParameterSet &params, bool isPreview)
 {
-    MeshFilterInterface         *iFilter    = qobject_cast<        MeshFilterInterface *>(action->parent());
+    MeshFilterInterface *iFilter = qobject_cast<MeshFilterInterface *>(action->parent());
     qb->show();
     iFilter->setLog(&meshDoc()->Log);
 
@@ -1579,7 +1591,7 @@ void MainWindow::executeFilter(QAction *action, RichParameterSet &params, bool i
                 if(iFilter->getClass(action) & MeshFilterInterface::VertexColoring )
                     mm->updateDataMask(MeshModel::MM_VERTCOLOR);
 
-                if((iFilter->getClass(action) & MeshFilterInterface::MeshColoring ) || (iFilter->postCondition(action) & MeshModel::MM_COLOR))
+                if(iFilter->getClass(action) & MeshFilterInterface::MeshColoring )
                     mm->updateDataMask(MeshModel::MM_COLOR);
 
                 if(iFilter->postCondition(action) & MeshModel::MM_CAMERA)
@@ -1914,16 +1926,13 @@ void MainWindow::postFilterExecution()
     }
 
     if(fclasses & MeshFilterInterface::FaceColoring ) {
-//GLA()->setColorMode(vcg::GLW::CMPerFace);
         meshDoc()->mm()->updateDataMask(MeshModel::MM_FACECOLOR);
     }
     if(fclasses & MeshFilterInterface::VertexColoring ){
-/*GLA()->setColorMode(vcg::GLW::CMPerVert);*/
         meshDoc()->mm()->updateDataMask(MeshModel::MM_VERTCOLOR);
     }
     if(fclasses & MeshModel::MM_COLOR)
     {
-/*GLA()->setColorMode(vcg::GLW::CMPerMesh);*/
         meshDoc()->mm()->updateDataMask(MeshModel::MM_COLOR);
     }
 
@@ -2549,7 +2558,7 @@ void MainWindow::newProject(const QString& projName)
 	//if(mdiarea->isVisible())
     updateLayerDialog();
     mvcont->showMaximized();
-    connect(mvcont->sharedDataContext(),SIGNAL(currentAllocatedGPUMem(int,int)),this,SLOT(updateGPUMemBar(int,int)));
+    connect(mvcont->sharedDataContext(),SIGNAL(currentAllocatedGPUMem(int,int,int,int)),this,SLOT(updateGPUMemBar(int,int,int,int)));
 }
 
 void MainWindow::documentUpdateRequested()
@@ -2572,17 +2581,36 @@ void MainWindow::documentUpdateRequested()
 	}
 }
 
-void MainWindow::updateGPUMemBar(int allmem,int currentallocated)
+void MainWindow::updateGPUMemBar(int nv_allmem, int nv_currentallocated, int ati_free_tex, int ati_free_vbo)
 {
 #ifdef Q_OS_WIN
     if (nvgpumeminfo != NULL)
     {
-        nvgpumeminfo->setFormat( "Mem %p% %v/%m MB" );
-        int allmb = allmem/1024;
-        nvgpumeminfo->setRange(  0 , allmb );
-        int remainingmb = (allmem-currentallocated)/1024;
-        nvgpumeminfo->setValue( remainingmb);
-        nvgpumeminfo->setFixedWidth(300);
+		if (nv_allmem + nv_currentallocated > 0)
+		{
+			nvgpumeminfo->setFormat("Mem %p% %v/%m MB");
+			int allmb = nv_allmem / 1024;
+			nvgpumeminfo->setRange(0, allmb);
+			int remainingmb = (nv_allmem - nv_currentallocated) / 1024;
+			nvgpumeminfo->setValue(remainingmb);
+			nvgpumeminfo->setFixedWidth(300);
+		}
+		else if (ati_free_tex + ati_free_vbo > 0)
+		{
+			int texmb = ati_free_tex / 1024;
+			int vbomb = ati_free_vbo / 1024;
+			nvgpumeminfo->setFormat(QString("Free: " + QString::number(vbomb) + "MB vbo - " + QString::number(texmb) + "MB tex"));
+			nvgpumeminfo->setRange(0, 100);
+			nvgpumeminfo->setValue(100);
+			nvgpumeminfo->setFixedWidth(300);
+		}
+		else
+		{
+			nvgpumeminfo->setFormat("UNRECOGNIZED CARD");
+			nvgpumeminfo->setRange(0, 100);
+			nvgpumeminfo->setValue(0);
+			nvgpumeminfo->setFixedWidth(300);
+		}
     }
 #else
     nvgpumeminfo->hide();
@@ -3264,7 +3292,7 @@ void MainWindow::helpOnscreen()
 void MainWindow::helpOnline()
 {
     checkForUpdates(false);
-    QDesktopServices::openUrl(QUrl("http://www.meshlab.net"));
+    QDesktopServices::openUrl(QUrl("http://www.meshlab.net/#support"));
 }
 
 void MainWindow::showToolbarFile(){

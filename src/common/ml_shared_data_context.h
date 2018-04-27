@@ -200,6 +200,10 @@ struct MLPerViewGLOptions : public vcg::RenderingModalityGLOptions
     _perpoint_pointattenuation_enabled = bset[31];
   }
 
+	static float minPointSize()
+	{
+		return 1.0f;
+	}
 
 	static float maxPointSize()
 	{
@@ -420,7 +424,7 @@ private:
 
 signals:
 
-	void currentAllocatedGPUMem(int all, int current);
+	void currentAllocatedGPUMem(int nv_all, int nv_current, int ati_tex, int ati_vbo);
 
 	///*signals intended for the plugins living in the same thread*/
 	//void initPerMeshViewRequestST(int,QGLContext*,const MLRenderingData&);
