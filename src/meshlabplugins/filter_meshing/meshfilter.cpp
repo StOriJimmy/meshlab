@@ -33,6 +33,7 @@
 #include <vcg/complex/algorithms/update/curvature.h>
 #include <vcg/complex/algorithms/update/curvature_fitting.h>
 #include <vcg/complex/algorithms/pointcloud_normal.h>
+#include <vcg/complex/algorithms/isotropic_remeshing.h>
 #include <vcg/space/fitting3.h>
 #include <wrap/gl/glu_tessellator_cap.h>
 #include "quadric_simp.h"
@@ -49,6 +50,7 @@ ExtraMeshFilterPlugin::ExtraMeshFilterPlugin(void)
         << FP_CLUSTERING
         << FP_QUADRIC_SIMPLIFICATION
         << FP_QUADRIC_TEXCOORD_SIMPLIFICATION
+        << FP_EXPLICIT_ISOTROPIC_REMESHING
         << FP_MIDPOINT
         << FP_REORIENT
         << FP_FLIP_AND_SWAP
@@ -87,18 +89,27 @@ ExtraMeshFilterPlugin::ExtraMeshFilterPlugin(void)
         actionList << new QAction(filterName(tt), this);
     
     tri::TriEdgeCollapseQuadricParameter lpp;
-    lastq_QualityThr       = lpp.QualityThr;// 0.3f;
-    lastq_PreserveBoundary = false;
-    lastq_PreserveNormal   = false;
-    lastq_PreserveTopology = false;
-    lastq_OptimalPlacement = true;
-    lastq_Selected         = false;
-    lastq_PlanarQuadric    = false;
-    lastq_PlanarWeight     = lpp.QualityQuadricWeight;
-    lastq_QualityWeight    = false;
-    lastq_BoundaryWeight   = lpp.BoundaryQuadricWeight;
-    lastqtex_QualityThr    = 0.3f;
-    lastqtex_extratw       = 1.0;
+	lastq_QualityThr          = lpp.QualityThr;// 0.3f;
+	lastq_PreserveBoundary    = false;
+	lastq_PreserveNormal      = false;
+	lastq_PreserveTopology    = false;
+	lastq_OptimalPlacement    = true;
+	lastq_Selected            = false;
+	lastq_PlanarQuadric       = false;
+	lastq_PlanarWeight        = lpp.QualityQuadricWeight;
+	lastq_QualityWeight       = false;
+	lastq_BoundaryWeight      = lpp.BoundaryQuadricWeight;
+	lastqtex_QualityThr       = 0.3f;
+	lastqtex_extratw          = 1.0;
+
+	lastisor_RemeshingAdaptivity = false;
+	lastisor_SelectedOnly        = false;
+	lastisor_RefineFlag          = true;
+	lastisor_CollapseFlag        = true;
+	lastisor_SmoothFlag          = true;
+	lastisor_SwapFlag            = true;
+	lastisor_ProjectFlag         = true;
+	lastisor_FeatureDeg          = 30.0f;
 }
 
 ExtraMeshFilterPlugin::FilterClass ExtraMeshFilterPlugin::getClass(QAction * a)
@@ -110,6 +121,7 @@ ExtraMeshFilterPlugin::FilterClass ExtraMeshFilterPlugin::getClass(QAction * a)
     case FP_MIDPOINT                         :
     case FP_QUADRIC_SIMPLIFICATION           :
     case FP_QUADRIC_TEXCOORD_SIMPLIFICATION  :
+    case FP_EXPLICIT_ISOTROPIC_REMESHING     :
     case FP_CLUSTERING                       :
     case FP_CLOSE_HOLES                      :
     case FP_FAUX_CREASE                      :
@@ -163,6 +175,7 @@ int ExtraMeshFilterPlugin::getPreCondition(QAction *filter) const
     case FP_REFINE_CATMULL                   :
     case FP_QUADRIC_SIMPLIFICATION           :
     case FP_QUADRIC_TEXCOORD_SIMPLIFICATION  :
+    case FP_EXPLICIT_ISOTROPIC_REMESHING     :
     case FP_REORIENT                         :
     case FP_INVERT_FACES                     :
     case FP_COMPUTE_PRINC_CURV_DIR           :
@@ -205,6 +218,7 @@ QString ExtraMeshFilterPlugin::filterName(FilterIDType filter) const
     case FP_REFINE_CATMULL                   : return tr("Subdivision Surfaces: Catmull-Clark");
 	case FP_QUADRIC_SIMPLIFICATION           : return tr("Simplification: Quadric Edge Collapse Decimation");
     case FP_QUADRIC_TEXCOORD_SIMPLIFICATION  : return tr("Simplification: Quadric Edge Collapse Decimation (with texture)");
+    case FP_EXPLICIT_ISOTROPIC_REMESHING     : return tr("Remeshing: Isotropic Explicit Remeshing");
     case FP_CLUSTERING                       : return tr("Simplification: Clustering Decimation");
     case FP_REORIENT                         : return tr("Re-Orient all faces coherentely");
     case FP_INVERT_FACES                     : return tr("Invert Faces Orientation");
@@ -228,8 +242,8 @@ QString ExtraMeshFilterPlugin::filterName(FilterIDType filter) const
     case FP_QUAD_DOMINANT                    : return tr("Turn into Quad-Dominant mesh");
     case FP_MAKE_PURE_TRI                    : return tr("Turn into a Pure-Triangular mesh");
     case FP_QUAD_PAIRING                     : return tr("Tri to Quad by smart triangle pairing");
-    case FP_FAUX_CREASE                      : return tr("Crease Marking with NonFaux Edges");
-    case FP_FAUX_EXTRACT                     : return tr("Build a Polyline with NonFaux Edges");
+    case FP_FAUX_CREASE                      : return tr("Select Crease Edges");
+    case FP_FAUX_EXTRACT                     : return tr("Build a Polyline from Selected Edges");
     case FP_VATTR_SEAM                       : return tr("Vertex Attribute Seam");
     case FP_REFINE_LS3_LOOP                  : return tr("Subdivision Surfaces: LS3 Loop");
     case FP_SLICE_WITH_A_PLANE               : return tr("Compute Planar Section");
@@ -269,6 +283,7 @@ QString ExtraMeshFilterPlugin::filterInfo(FilterIDType filterID) const
     case FP_CLUSTERING                         : return tr("Collapse vertices by creating a three dimensional grid enveloping the mesh and discretizes them based on the cells of this grid");
     case FP_QUADRIC_SIMPLIFICATION             : return tr("Simplify a mesh using a Quadric based Edge Collapse Strategy; better than clustering but slower");
     case FP_QUADRIC_TEXCOORD_SIMPLIFICATION    : return tr("Simplify a textured mesh using a Quadric based Edge Collapse Strategy preserving UV parametrization; better than clustering but slower");
+    case FP_EXPLICIT_ISOTROPIC_REMESHING       : return tr("Perform a explict remeshing of a triangular mesh, by repeatedly applying edge flip, collapse, relax and refine to improve aspect ratio (triangle quality) and topological regularity.");
     case FP_REORIENT                           : return tr("Re-orient in a consistent way all the faces of the mesh. <br>"
                                                            "The filter visits a mesh face to face, reorienting any unvisited face so that it is coherent "
                                                            "to the already visited faces. If the surface is orientable it will end with a consistent orientation of "
@@ -299,7 +314,7 @@ QString ExtraMeshFilterPlugin::filterInfo(FilterIDType filterID) const
     case FP_QUAD_PAIRING                       : return tr("Convert a tri-mesh into a quad mesh by pairing triangles.");
     case FP_QUAD_DOMINANT                      : return tr("Convert a tri-mesh into a quad-dominant mesh by pairing suitable triangles.");
     case FP_MAKE_PURE_TRI                      : return tr("Convert into a tri-mesh by splitting any polygonal face.");
-    case FP_FAUX_CREASE                        : return tr("Mark the crease edges of a mesh as Non-Faux according to edge dihedral angle.<br>"
+    case FP_FAUX_CREASE                        : return tr("It select the crease edges of a mesh according to edge dihedral angle.<br>"
                                                            "Angle between face normal is considered signed according to convexity/concavity."
                                                            "Convex angles are positive and concave are negative.");
     case FP_VATTR_SEAM                         : return tr("Make all selected vertex attributes connectivity-independent:<br/>"
@@ -307,7 +322,7 @@ QString ExtraMeshFilterPlugin::filterInfo(FilterIDType filterID) const
                                                            "This is particularly useful for GPU-friendly mesh layout, where a single index must be used to access all required vertex attributes.");
     case FP_SLICE_WITH_A_PLANE                 : return tr("Compute the polyline representing a planar section (a slice) of a mesh; if the resulting polyline is closed the result is filled and also a triangular mesh representing the section is saved");
 	case FP_PERIMETER_POLYLINE                 : return tr("Create a new Layer with the perimeter polyline(s) of the selection borders");
-    case FP_FAUX_EXTRACT                       : return tr("Create a new Layer with an edge mesh composed only by the non faux edges of the current mesh");
+    case FP_FAUX_EXTRACT                       : return tr("Create a new Layer with an edge mesh composed only by the selected edges of the current mesh");
 
     default                                  : assert(0);
     }
@@ -369,6 +384,23 @@ void ExtraMeshFilterPlugin::initParameterSet(QAction * action, MeshModel & m, Ri
         parlst.addParam(new RichBool ("Selected",m.cm.sfn>0,"Simplify only selected faces","The simplification is applied only to the selected set of faces.\n Take care of the target number of faces!"));
         break;
 
+    case FP_EXPLICIT_ISOTROPIC_REMESHING:
+		parlst.addParam(new RichInt  ("Iterations", 3, "Iterations", "Number of iterations of the remeshing operations to repeat on the mesh."));
+		parlst.addParam(new RichBool ("Adaptive", lastisor_RemeshingAdaptivity, "Adaptive remeshing", "Toggles adaptive isotropic remeshing." ));
+		parlst.addParam(new RichBool ("SelectedOnly", lastisor_SelectedOnly, "Remesh only selected faces", "If checked the remeshing operations will be applyed only to the selected faces."));
+		maxVal = m.cm.bbox.Diag();
+		parlst.addParam(new RichAbsPerc("TargetLen",maxVal*0.01,0,maxVal,"Target Length", "Sets the target length for the remeshed mesh edges."));
+		parlst.addParam(new RichFloat  ("FeatureDeg", lastisor_FeatureDeg, "Minimum angle between faces to consider the shared edge as a feature to be preserved."));
+
+		parlst.addParam(new RichBool ("SplitFlag", lastisor_RefineFlag, "Refine Step", "If checked the remeshing operations will include a refine step."));
+		parlst.addParam(new RichBool ("CollapseFlag", lastisor_CollapseFlag, "Collapse Step", "If checked the remeshing operations will include a collapse step."));
+		parlst.addParam(new RichBool ("SwapFlag", lastisor_SwapFlag, "Edge-Swap Step", "If checked the remeshing operations will include a edge-swap step, aimed at improving the vertex valence of the resulting mesh."));
+		parlst.addParam(new RichBool ("SmoothFlag", lastisor_SmoothFlag, "Smooth Step", "If checked the remeshing operations will include a smoothing step, aimed at relaxing the vertex positions in a Laplacian sense."));
+		parlst.addParam(new RichBool ("ReprojectFlag", lastisor_ProjectFlag, "Reproject Step", "If checked the remeshing operations will include a step to reproject the mesh vertices on the original surface."));
+
+
+
+      break;
     case FP_CLOSE_HOLES:
         parlst.addParam(new RichInt ("MaxHoleSize",(int)30,"Max size to be closed ","The size is expressed as number of edges composing the hole boundary"));
         parlst.addParam(new RichBool("Selected",m.cm.sfn>0,"Close holes with selected faces","Only the holes with at least one of the boundary faces selected are closed"));
@@ -887,7 +919,53 @@ switch(ID(filter))
 		tri::UpdateNormal<CMeshO>::PerVertexFromCurrentFaceNormal(m.cm);
 		tri::UpdateNormal<CMeshO>::NormalizePerVertex(m.cm);
 	} break;
+    case FP_EXPLICIT_ISOTROPIC_REMESHING:
+    {
+	    m.updateDataMask( MeshModel::MM_GEOMETRY_AND_TOPOLOGY_CHANGE | MeshModel::MM_FACEFACETOPO  | MeshModel::MM_VERTQUALITY | MeshModel::MM_FACEMARK | MeshModel::MM_FACEFLAG );
 
+		tri::Clean<CMeshO>::RemoveDuplicateVertex(m.cm);
+		tri::Clean<CMeshO>::RemoveUnreferencedVertex(m.cm);
+		tri::Allocator<CMeshO>::CompactEveryVector(m.cm);
+
+		m.UpdateBoxAndNormals();
+
+		CMeshO toProjectCopy;
+
+		toProjectCopy.face.EnableMark();
+
+		tri::Append<CMeshO, CMeshO>::MeshCopy(toProjectCopy, m.cm);
+
+		tri::IsotropicRemeshing<CMeshO>::Params params;
+		params.SetTargetLen(par.getAbsPerc("TargetLen"));
+		params.SetFeatureAngleDeg(par.getFloat("FeatureDeg"));
+
+		params.iter         = par.getInt("Iterations");
+		params.adapt        = par.getBool("Adaptive");
+		params.selectedOnly = par.getBool("SelectedOnly");
+		params.splitFlag    = par.getBool("SplitFlag");
+		params.collapseFlag = par.getBool("CollapseFlag");
+		params.swapFlag     = par.getBool("SwapFlag");
+		params.smoothFlag   = par.getBool("SmoothFlag");
+		params.projectFlag  = par.getBool("ReprojectFlag");
+
+		lastisor_RemeshingAdaptivity = params.adapt;
+		lastisor_SelectedOnly        = params.selectedOnly;
+		lastisor_RefineFlag          = params.splitFlag;
+		lastisor_CollapseFlag        = params.collapseFlag;
+		lastisor_SwapFlag            = params.swapFlag;
+		lastisor_SmoothFlag          = params.smoothFlag;
+		lastisor_ProjectFlag         = params.projectFlag;
+
+		lastisor_FeatureDeg = par.getFloat("FeatureDeg");
+
+		tri::IsotropicRemeshing<CMeshO>::Do(m.cm, toProjectCopy, params, cb);
+
+		m.UpdateBoxAndNormals();
+
+//		m.clearDataMask(MeshModel::MM_GEOMETRY_AND_TOPOLOGY_CHANGE | MeshModel::MM_FACEFACETOPO  | MeshModel::MM_VERTQUALITY | MeshModel::MM_FACEMARK | MeshModel::MM_FACEFLAG);
+
+    } break;
+    
 	case FP_ROTATE_FIT:
 	{
 		Box3m selBox; //boundingbox of the selected vertices
@@ -1426,7 +1504,7 @@ switch(ID(filter))
         float AngleDegNeg = par.getFloat("AngleDegNeg");
         float AngleDegPos = par.getFloat("AngleDegPos");
 //		tri::UpdateFlags<CMeshO>::FaceFauxCrease(m.cm,math::ToRad(AngleDeg));
-        tri::UpdateFlags<CMeshO>::FaceFauxSignedCrease(m.cm, math::ToRad(AngleDegNeg), math::ToRad(AngleDegPos));
+        tri::UpdateFlags<CMeshO>::FaceEdgeSelSignedCrease(m.cm, math::ToRad(AngleDegNeg), math::ToRad(AngleDegPos));
         m.updateDataMask(MeshModel::MM_POLYGONAL);
 	} break;
 
@@ -1434,7 +1512,7 @@ switch(ID(filter))
 	{
 		//WARNING!!!! the RenderMode(GLW::DMWire) should be useless but...
 		MeshModel *em= md.addNewMesh("","EdgeMesh",true/*,RenderMode(GLW::DMWire)*/);
-		BuildFromNonFaux(m.cm,em->cm);
+		BuildFromFaceEdgeSel(m.cm,em->cm);
 	} break;
 
     case FP_VATTR_SEAM :
@@ -1671,6 +1749,7 @@ int ExtraMeshFilterPlugin::postCondition(QAction * filter) const
 		case FP_CLUSTERING :
 		case FP_QUADRIC_SIMPLIFICATION :
 		case FP_QUADRIC_TEXCOORD_SIMPLIFICATION :
+        case FP_EXPLICIT_ISOTROPIC_REMESHING :
 		case FP_MIDPOINT :
 		case FP_REORIENT :
 		case FP_INVERT_FACES :
@@ -1683,7 +1762,7 @@ int ExtraMeshFilterPlugin::postCondition(QAction * filter) const
 		case FP_FAUX_CREASE :
 		case FP_FAUX_EXTRACT :
 		case FP_VATTR_SEAM :
-		case FP_REFINE_LS3_LOOP : return MeshModel::MM_GEOMETRY_CHANGE;
+		case FP_REFINE_LS3_LOOP : return MeshModel::MM_GEOMETRY_AND_TOPOLOGY_CHANGE;
 
 		case FP_COMPUTE_PRINC_CURV_DIR : return MeshModel::MM_VERTFACETOPO | MeshModel::MM_FACEFACETOPO | MeshModel::MM_VERTCURV | MeshModel::MM_VERTCURVDIR | MeshModel::MM_VERTCOLOR | MeshModel::MM_VERTQUALITY;
 

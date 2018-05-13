@@ -45,6 +45,7 @@ public:
         FP_CLUSTERING,
         FP_QUADRIC_SIMPLIFICATION,
         FP_QUADRIC_TEXCOORD_SIMPLIFICATION,
+        FP_EXPLICIT_ISOTROPIC_REMESHING,
         FP_NORMAL_EXTRAPOLATION,
         FP_NORMAL_SMOOTH_POINTCLOUD,
         FP_COMPUTE_PRINC_CURV_DIR,
@@ -107,6 +108,15 @@ protected:
 
     float lastqtex_QualityThr;
     float lastqtex_extratw;
-};
 
+	float lastisor_FeatureDeg;
+	bool lastisor_RemeshingAdaptivity;
+	bool lastisor_SelectedOnly;
+	bool lastisor_RefineFlag;
+	bool lastisor_CollapseFlag;
+	bool lastisor_SwapFlag;
+	bool lastisor_SmoothFlag;
+	bool lastisor_ProjectFlag;
+
+};
 #endif
