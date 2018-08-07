@@ -135,6 +135,14 @@ public slots:
     void updateRenderingDataAccordingToActions(int meshid,const QList<MLRenderingAction*>&);
     void updateRenderingDataAccordingToAction(int meshid,MLRenderingAction*);
     void actionActivated(MLRenderingAction* ract);
+	void clickW1();
+	void clickW2();
+	void clickW3();
+	void clickW4();
+	void clickV1();
+	void clickV2();
+	void clickV3();
+	void clickV4();
 
 private slots:
 	/*WARNING!!! ADDED just to avoid usual mac strange behavior. Please, avoid to use it if it's not absolutely necessary*/
@@ -160,6 +168,11 @@ private:
     void updatePerRasterItemVisibility();
 
     void updateProjectName(const QString& name);
+
+	// state buttons
+	bool isRecording;
+	QString viewState[4];
+	QMap<int, bool> visibilityState[4];
 
     QTreeWidgetItem* _docitem;
     int _previd;
