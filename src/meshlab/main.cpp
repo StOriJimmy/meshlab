@@ -23,6 +23,7 @@
 #include <common/mlapplication.h>
 #include <QMessageBox>
 #include "mainwindow.h"
+#include <QGLFormat>
 #include <QString>
 #include <clocale>
 
@@ -40,7 +41,11 @@ int main(int argc, char *argv[])
 
     QString tmp = MeshLabApplication::appArchitecturalName(MeshLabApplication::HW_ARCHITECTURE(QSysInfo::WordSize));
     QCoreApplication::setApplicationName(MeshLabApplication::appArchitecturalName(MeshLabApplication::HW_ARCHITECTURE(QSysInfo::WordSize)));
-   
+
+    QGLFormat fmt = QGLFormat::defaultFormat();
+    fmt.setAlphaBufferSize(8);
+    QGLFormat::setDefaultFormat(fmt);
+
     MainWindow window;
     window.showMaximized();
 
@@ -49,25 +54,39 @@ int main(int argc, char *argv[])
     app.installEventFilter(filterObj);
     app.processEvents();
 
+    // Can load multiple meshes and projects, and also a camera view
     if(argc>1)
     {
         QString helpOpt1="-h";
         QString helpOpt2="--help";
         if( (helpOpt1==argv[1]) || (helpOpt2==argv[1]) )
+          {
             printf(
             "usage:\n"
             "meshlab <meshfile>\n"
             "Look at http://www.meshlab.net\n"
             "for a longer documentation\n"
             );
+            return 0;
+          }
 
+        std::vector<QString> cameraViews;
         for (int i = 1; i < argc; ++i)
         {
             QString arg = QString::fromLocal8Bit(argv[i]);
             if(arg.endsWith("mlp",Qt::CaseInsensitive) || arg.endsWith("mlb",Qt::CaseInsensitive) || arg.endsWith("aln",Qt::CaseInsensitive) || arg.endsWith("out",Qt::CaseInsensitive) || arg.endsWith("nvm",Qt::CaseInsensitive))
                 window.openProject(arg);
+            else if(arg.endsWith("xml",Qt::CaseInsensitive))
+                cameraViews.push_back(arg); 
             else
                 window.importMeshWithLayerManagement(arg);
+        }
+        
+        // Load the view after everything else
+        if (!cameraViews.empty()) {
+          if (cameraViews.size() > 1) 
+            printf("Multiple views specified. Loading the last one.\n");
+          window.readViewFromFile(cameraViews.back());
         }
     }
     //else 	if(filterObj->noEvent) window.open();

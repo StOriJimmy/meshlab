@@ -51,6 +51,10 @@
 #include "../common/mlapplication.h"
 #include "../common/filterscript.h"
 
+extern "C" {
+#include "jhead.h"
+}
+
 
 using namespace std;
 using namespace vcg;
@@ -117,11 +121,12 @@ void MainWindow::createStdPluginWnd()
 void MainWindow::createXMLStdPluginWnd()
 {
     //checks if a MeshlabStdDialog is already open and closes it
-    if (xmldialog!=0){
+    if (xmldialog!=nullptr){
         xmldialog->close();
         delete xmldialog;
     }
     xmldialog = new MeshLabXMLStdDialog(this);
+    //Ask filterParametersEvaluated to add current filter to filterHistory
     connect(xmldialog,SIGNAL(filterParametersEvaluated(const QString&,const QMap<QString,QString>&)),meshDoc()->filterHistory,SLOT(addExecutedXMLFilter(const QString&,const QMap<QString,QString>& )));
     //connect(xmldialog,SIGNAL(dialogEvaluateExpression(const Expression&,Value**)),this,SLOT(evaluateExpression(const Expression&,Value**)),Qt::DirectConnection);
     xmldialog->setAllowedAreas (  Qt::NoDockWidgetArea);
@@ -206,7 +211,8 @@ void MainWindow::updateWindowMenu()
 			trackballStepMenu->addAction(ac);
 
         // View From File act
-        windowsMenu->addAction(viewFromFileAct);
+        windowsMenu->addAction(readViewFromFileAct);
+        windowsMenu->addAction(saveViewToFileAct);
         windowsMenu->addAction(viewFromMeshAct);
         windowsMenu->addAction(viewFromRasterAct);
 
@@ -400,13 +406,13 @@ void MainWindow::updateMenus()
     lastFilterAct->setText(QString("Apply filter"));
     editMenu->setEnabled(!editMenu->actions().isEmpty());
     updateMenuItems(editMenu,activeDoc);
-    renderMenu->setEnabled(!editMenu->actions().isEmpty());
+    renderMenu->setEnabled(!renderMenu->actions().isEmpty());
     updateMenuItems(renderMenu,activeDoc);
     fullScreenAct->setEnabled(activeDoc);
-	showLayerDlgAct->setEnabled(activeDoc);
-	showTrackBallAct->setEnabled(activeDoc);
-	resetTrackBallAct->setEnabled(activeDoc);
-	showInfoPaneAct->setEnabled(activeDoc);
+    showLayerDlgAct->setEnabled(activeDoc);
+    showTrackBallAct->setEnabled(activeDoc);
+    resetTrackBallAct->setEnabled(activeDoc);
+    showInfoPaneAct->setEnabled(activeDoc);
     windowsMenu->setEnabled(activeDoc);
     preferencesMenu->setEnabled(activeDoc);
 
@@ -588,7 +594,7 @@ void MainWindow::setHandleMenu(QPoint point, Qt::Orientation orientation, QSplit
         if(pickingId>=0)
             splitUpAct->setEnabled(mvc->getViewer(pickingId)->size().width()/2 > mvc->getViewer(pickingId)->minimumSizeHint().width());
 
-        //the viewer on top can be closed only if the splitter over the handle that orginated the event has one child
+        //the viewer on top can be closed only if the splitter over the handle that originated the event has one child
         bool unSplittabilityUp = true;
         Splitter * upSplitter = qobject_cast<Splitter *>(origin->widget(0));
         if(upSplitter)
@@ -600,7 +606,7 @@ void MainWindow::setHandleMenu(QPoint point, Qt::Orientation orientation, QSplit
         if(pickingId>=0)
             splitDownAct->setEnabled(mvc->getViewer(pickingId)->size().width()/2 > mvc->getViewer(pickingId)->minimumSizeHint().width());
 
-        //the viewer below can be closed only if the splitter ounder the handle that orginated the event has one child
+        //the viewer below can be closed only if the splitter ounder the handle that originated the event has one child
         bool unSplittabilityDown = true;
         Splitter * downSplitter = qobject_cast<Splitter *>(origin->widget(1));
         if(downSplitter)
@@ -627,7 +633,7 @@ void MainWindow::setHandleMenu(QPoint point, Qt::Orientation orientation, QSplit
         if(pickingId>=0)
             splitRightAct->setEnabled(mvc->getViewer(pickingId)->size().height()/2 > mvc->getViewer(pickingId)->minimumSizeHint().height());
 
-        //the viewer on the rigth can be closed only if the splitter on the right the handle that orginated the event has one child
+        //the viewer on the right can be closed only if the splitter on the right the handle that originated the event has one child
         bool unSplittabilityRight = true;
         Splitter * rightSplitter = qobject_cast<Splitter *>(origin->widget(1));
         if(rightSplitter)
@@ -639,7 +645,7 @@ void MainWindow::setHandleMenu(QPoint point, Qt::Orientation orientation, QSplit
         if(pickingId>=0)
             splitLeftAct->setEnabled(mvc->getViewer(pickingId)->size().height()/2 > mvc->getViewer(pickingId)->minimumSizeHint().height());
 
-        //the viewer on the left can be closed only if the splitter on the left of the handle that orginated the event has one child
+        //the viewer on the left can be closed only if the splitter on the left of the handle that originated the event has one child
         bool unSplittabilityLeft = true;
         Splitter * leftSplitter = qobject_cast<Splitter *>(origin->widget(0));
         if(leftSplitter)
@@ -728,8 +734,13 @@ void MainWindow::trackballStep(QAction *qa)
 
 void MainWindow::readViewFromFile()
 {
-    if(GLA()) GLA()->viewFromFile();
+    if(GLA()) GLA()->readViewFromFile();
     updateMenus();
+}
+
+void MainWindow::saveViewToFile()
+{
+    if(GLA()) GLA()->saveViewToFile();
 }
 
 void MainWindow::viewFromCurrentMeshShot()
@@ -814,13 +825,13 @@ void MainWindow::endEdit()
 
 void MainWindow::applyLastFilter()
 {
-    if(GLA()==0) return;
+    if(GLA()==nullptr) return;
     GLA()->getLastAppliedFilter()->activate(QAction::Trigger);
 }
 
 void MainWindow::showFilterScript()
 {
-    if (meshDoc()->filterHistory != NULL)
+    if (meshDoc()->filterHistory != nullptr)
     {
         FilterScriptDialog dialog(this);
 
@@ -835,13 +846,13 @@ void MainWindow::showFilterScript()
 
 void MainWindow::runFilterScript()
 {
-    if ((meshDoc() == NULL) || (meshDoc()->filterHistory == NULL))
+    if ((meshDoc() == nullptr) || (meshDoc()->filterHistory == nullptr))
         return;
     for(FilterScript::iterator ii= meshDoc()->filterHistory->filtparlist.begin();ii!= meshDoc()->filterHistory->filtparlist.end();++ii)
     {
         QString filtnm = (*ii)->filterName();
         int classes = 0;
-		int postCondMask = 0;
+        int postCondMask = 0;
         if (!(*ii)->isXMLFilter())
         {
             QAction *action = PM.actionFilterMap[ filtnm];
@@ -863,7 +874,7 @@ void MainWindow::runFilterScript()
                 if(parameter->val->isMesh())
                 {
                     RichMesh* md = reinterpret_cast<RichMesh*>(parameter);
-                    if(	md->meshindex < meshDoc()->size() &&
+                    if( md->meshindex < meshDoc()->size() &&
                         md->meshindex >= 0  )
                     {
                         RichMesh* rmesh = new RichMesh(parameter->name,md->meshindex,meshDoc());
@@ -1101,7 +1112,7 @@ void MainWindow::showTooltip(QAction* q)
 // /////////////////////////////////////////////////
 // The Very Important Procedure of applying a filter
 // /////////////////////////////////////////////////
-// It is splitted in two part
+// It is split in two part
 // - startFilter that setup the dialogs and asks for parameters
 // - executeFilter callback invoked when the params have been set up.
 
@@ -1113,8 +1124,8 @@ void MainWindow::startFilter()
 
     // In order to avoid that a filter changes something assumed by the current editing tool,
     // before actually starting the filter we close the current editing tool (if any).
-	if (GLA()->getCurrentEditAction() != NULL)
-		endEdit();
+    if (GLA()->getCurrentEditAction() != NULL)
+        endEdit();
     updateMenus();
 
     QStringList missingPreconditions;
@@ -1149,20 +1160,25 @@ void MainWindow::startFilter()
         // just to be sure...
         createStdPluginWnd();
 
-        if (xmldialog != NULL)
+        if (xmldialog != nullptr)
         {
             xmldialog->close();
             delete xmldialog;
-            xmldialog = NULL;
+            xmldialog = nullptr;
         }
 
-        // (2) Ask for filter parameters and eventally directly invoke the filter
+        // (2) Ask for filter parameters and eventually directly invoke the filter
         // showAutoDialog return true if a dialog have been created (and therefore the execution is demanded to the apply event)
         // if no dialog is created the filter must be executed immediately
         if(! stddialog->showAutoDialog(iFilter, meshDoc()->mm(), (meshDoc()), action, this, GLA()) )
         {
             RichParameterSet dummyParSet;
             executeFilter(action, dummyParSet, false);
+
+            //Insert the filter to filterHistory
+            OldFilterNameParameterValuesPair* tmp = new OldFilterNameParameterValuesPair();
+            tmp->pair = qMakePair(action->text(), dummyParSet);
+            meshDoc()->filterHistory->filtparlist.append(tmp);
         }
     }
     else // NEW XML PHILOSOPHY
@@ -1229,13 +1245,13 @@ void MainWindow::startFilter()
                 }
                 // just to be sure...
                 createXMLStdPluginWnd();
-                if (stddialog != NULL)
+                if (stddialog != nullptr)
                 {
                     stddialog->close();
                     delete stddialog;
-                    stddialog = NULL;
+                    stddialog = nullptr;
                 }
-                // (2) Ask for filter parameters and eventally directly invoke the filter
+                // (2) Ask for filter parameters and eventually directly invoke the filter
                 // showAutoDialog return true if a dialog have been created (and therefore the execution is demanded to the apply event)
                 // if no dialog is created the filter must be executed immediatel
                 if(!xmldialog->showAutoDialog(filt,PM,meshDoc(),  this, GLA()))
@@ -1259,8 +1275,9 @@ void MainWindow::startFilter()
         {
             meshDoc()->Log.Logf(GLLogStream::SYSTEM,e.what());
         }
-    }
-}
+    }//else
+
+}//void MainWindow::startFilter()
 
 
 void MainWindow::updateSharedContextDataAfterFilterExecution(int postcondmask,int fclasses,bool& newmeshcreated)
@@ -1431,7 +1448,7 @@ void MainWindow::executeFilter(QAction *action, RichParameterSet &params, bool i
     iFilter->setLog(&meshDoc()->Log);
 
     // Ask for filter requirements (eg a filter can need topology, border flags etc)
-    // and statisfy them
+    // and satisfy them
     qApp->setOverrideCursor(QCursor(Qt::WaitCursor));
     MainWindow::globalStatusBar()->showMessage("Starting Filter...",5000);
     int req=iFilter->getRequirements(action);
@@ -1754,7 +1771,7 @@ void MainWindow::executeFilter(MeshLabXMLFilterContainer* mfc,const QMap<QString
         iFilter->setLog(&meshDoc()->Log);
 
     //// Ask for filter requirements (eg a filter can need topology, border flags etc)
-    //// and statisfy them
+    //// and satisfy them
     qApp->setOverrideCursor(QCursor(Qt::WaitCursor));
     MainWindow::globalStatusBar()->showMessage("Starting Filter...",5000);
     //int req=iFilter->getRequirements(action);
@@ -1989,7 +2006,7 @@ void MainWindow::scriptCodeExecuted( const QScriptValue& val,const int time,cons
     }
 }
 
-// Edit Mode Managment
+// Edit Mode Management
 // At any point there can be a single editing plugin active.
 // When a plugin is active it intercept the mouse actions.
 // Each active editing tools
@@ -2745,24 +2762,32 @@ bool MainWindow::loadMesh(const QString& fileName, MeshIOInterface *pCurrentIOPl
         return false;
     }
 
+    // the original directory path before we switch it
+    QString origDir = QDir::current().path();
+    
     // this change of dir is needed for subsequent textures/materials loading
     QDir::setCurrent(fi.absoluteDir().absolutePath());
 
+    // Adjust the file name after changing the directory
+    QString fileNameSansDir = fi.fileName();
+    
     // retrieving corresponding IO plugin
     if (pCurrentIOPlugin == 0)
     {
         QString errorMsgFormat = "Error encountered while opening file:\n\"%1\"\n\nError details: The \"%2\" file extension does not correspond to any supported format.";
         QMessageBox::critical(this, tr("Opening Error"), errorMsgFormat.arg(fileName, extension));
+        QDir::setCurrent(origDir); // undo the change of directory before leaving
         return false;
     }
     meshDoc()->setBusy(true);
     pCurrentIOPlugin->setLog(&meshDoc()->Log);
 
-    if (!pCurrentIOPlugin->open(extension, fileName, *mm ,mask,*prePar,QCallBack,this /*gla*/))
+    if (!pCurrentIOPlugin->open(extension, fileNameSansDir, *mm ,mask,*prePar,QCallBack,this /*gla*/))
     {
         QMessageBox::warning(this, tr("Opening Failure"), QString("While opening: '%1'\n\n").arg(fileName)+pCurrentIOPlugin->errorMsg()); // text+
         pCurrentIOPlugin->clearErrorString();
         meshDoc()->setBusy(false);
+        QDir::setCurrent(origDir); // undo the change of directory before leaving
         return false;
     }
 
@@ -2832,6 +2857,8 @@ bool MainWindow::loadMesh(const QString& fileName, MeshIOInterface *pCurrentIOPl
 
 
     meshDoc()->setBusy(false);
+
+    QDir::setCurrent(origDir); // undo the change of directory before leaving
 
     return true;
 }
@@ -3250,6 +3277,11 @@ bool MainWindow::save(const bool saveAllPossibleAttributes)
 bool MainWindow::saveAs(QString fileName,const bool saveAllPossibleAttributes)
 {
     return exportMesh(fileName,meshDoc()->mm(),saveAllPossibleAttributes);
+}
+
+void MainWindow::readViewFromFile(QString const& filename){
+      if(GLA() != 0)
+          GLA()->readViewFromFile(filename);
 }
 
 bool MainWindow::saveSnapshot()

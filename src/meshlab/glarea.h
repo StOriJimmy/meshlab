@@ -41,7 +41,7 @@
 #include "glarea_setting.h"
 #include "snapshotsetting.h"
 #include "multiViewer_Container.h"
-#include "ml_selection_buffers.h"
+#include <common/ml_selection_buffers.h>
 #include "ml_default_decorators.h"
 
 #define SSHOT_BYTES_PER_PIXEL 4
@@ -131,7 +131,14 @@ public:
 
     vcg::Trackball trackball;
     vcg::Trackball trackball_light;
-    void Logf(int Level, const char * f, ... );
+    template <typename... Ts>
+    void Logf(int Level, const char * f, Ts&&... ts)
+    {
+        makeCurrent();
+        if( this->md() != nullptr){
+            this->md()->Log.Logf(Level, f, std::forward<Ts>(ts)...);
+        }
+    }
 
     GLAreaSetting glas;
     QSize minimumSizeHint() const;
@@ -352,7 +359,7 @@ public:
 
     // the following pairs of slot/signal implements a very simple message passing mechanism.
     // a widget that has a pointer to the glarea call the sendViewDir() slot and
-    // setup a connect to recive the transmitViewDir signal that actually contains the point3f.
+    // setup a connect to receive the transmitViewDir signal that actually contains the point3f.
     // This mechanism is used to get the view direction/position and picking point on surface in the filter parameter dialog.
     // See the Point3fWidget code.
 signals :
@@ -408,8 +415,8 @@ protected:
     void hideEvent(QHideEvent * event);
 
 private:
-	void renderingFacilityString();
-	QString renderfacility;
+    void renderingFacilityString();
+    QString renderfacility;
     void setLightingColors(const MLPerViewGLOptions& opts);
 
     QMap<QString,QCursor> curMap;
@@ -516,16 +523,18 @@ private:
 public:
     QPair<Shotm, float > shotFromTrackball();
     void viewFromCurrentShot(QString kind);
-    bool viewFromFile();
+    bool saveViewToFile();
+    bool readViewFromFile();
+    bool readViewFromFile(QString const& filename);
     void createOrthoView(QString);
-	void toggleOrtho();
-	void trackballStep(QString);
+    void toggleOrtho();
+    void trackballStep(QString);
     void viewToClipboard();
     QString viewToText();
     void viewFromClipboard();
     void loadShot(const QPair<Shotm, float> &) ;
-	void loadShotFromTextAlignFile(const QDomDocument &doc);
-	void loadViewFromViewStateFile(const QDomDocument &doc);
+    void loadShotFromTextAlignFile(const QDomDocument &doc);
+    void loadViewFromViewStateFile(const QDomDocument &doc);
 
 private:
 
