@@ -51,7 +51,7 @@ do
 cp ./$x $BUNDLE/meshlab.app/Contents/PlugIns/
 done
 
-for x in $BUNDLE/meshlab.app/Contents/plugins/*.dylib
+for x in $BUNDLE/meshlab.app/Contents/PlugIns/*.dylib
 do
  install_name_tool -change libcommon.1.dylib @executable_path/libcommon.1.dylib $x
 done
@@ -61,19 +61,7 @@ echo 'Copying other files'
 cp ../../LICENSE.txt $BUNDLE
 cp ../../docs/readme.txt $BUNDLE
 
-mkdir $BUNDLE/$APPNAME/Contents/plugins/U3D_OSX  
-cp plugins/U3D_OSX/IDTFConverter.out  $BUNDLE/$APPNAME/Contents/plugins/U3D_OSX
-cp plugins/U3D_OSX/IDTFConverter.sh  $BUNDLE/$APPNAME/Contents/plugins/U3D_OSX
-cp plugins/U3D_OSX/libIFXCore.so  $BUNDLE/$APPNAME/Contents/plugins/U3D_OSX
-mkdir $BUNDLE/$APPNAME/Contents/plugins/U3D_OSX/Plugins
-cp plugins/U3D_OSX/Plugins/libIFXExporting.so  $BUNDLE/$APPNAME/Contents/plugins/U3D_OSX/Plugins
-
-mkdir $BUNDLE/$APPNAME/Contents/textures   
-cp textures/*.png $BUNDLE/$APPNAME/Contents/textures/
-mkdir $BUNDLE/$APPNAME/Contents/textures/cubemaps   
-cp textures/cubemaps/uffizi*.jpg $BUNDLE/$APPNAME/Contents/textures/cubemaps
-mkdir $BUNDLE/$APPNAME/Contents/textures/litspheres   
-cp textures/litspheres/*.png $BUNDLE/$APPNAME/Contents/textures/litspheres
+cp -r plugins/U3D_OSX  $BUNDLE/$APPNAME/Contents/PlugIns/
 
 mkdir $BUNDLE/$APPNAME/Contents/shaders   
 cp shaders/*.gdp shaders/*.vert shaders/*.frag shaders/*.txt  $BUNDLE/$APPNAME/Contents/shaders
@@ -89,9 +77,9 @@ echo "Changing the paths of the qt component frameworks using the qt tool macdep
 if [ -e $QTDIR/bin/macdeployqt ]
 then
 echo
-$QTDIR/bin/macdeployqt $BUNDLE/$APPNAME -verbose=2
+$QTDIR/bin/macdeployqt $BUNDLE/$APPNAME -executable=$BUNDLE/$APPNAME/Contents/MacOS/meshlabserver
 else
-macdeployqt $BUNDLE/$APPNAME -verbose=2
+macdeployqt $BUNDLE/$APPNAME -executable=$BUNDLE/$APPNAME/Contents/MacOS/meshlabserver
 fi
 
 cd ../install/macx
