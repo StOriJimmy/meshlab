@@ -10,42 +10,45 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-    - name: Installing dependencies
+    - name: Checkout submodules
+      shell: bash
       run: |
-       sudo apt install -y qt5-default qttools5-dev-tools qtscript5-dev libqt5xmlpatterns5-dev mesa-common-dev libglu1-mesa-dev lib3ds-dev libglew-dev libeigen3-dev libopenctm-dev libgmp-dev libqhull-dev
-       cd ..
-       git clone --depth=1 --branch=devel https://github.com/cnr-isti-vclab/vcglib.git
-    - name: Setting env variables
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+    - name: Install dependencies
+      run: |
+       sh install/linux/linux_setup_env_ubuntu.sh
+    - name: Setup env variables
       id: envs
       shell: bash
       run: |
         echo  ::set-output name=date::"$(date +%Y.%m)"
-    - name: Compiling external
+    - name: Build MeshLab
       run: |
-        cd src/external
-        qmake external.pro
-        make -j4
-    - name: Compiling MeshLab
-      run: |
-        cd src/
-        qmake meshlab_full.pro
-        make -j4
-    - name: Creating Meshlab Portable ZIP
+        sh install/linux/linux_build.sh
+    - name: Deploy MeshLabServer
       run : |
-        cd src/install/linux
-        ./linux_install.sh
-        cd ../../distrib/
-        mv *.AppImage ../MeshLab${{steps.envs.outputs.date}}-linux.AppImage
-    - name: Uploading Meshlab Portable
+        sh install/linux/linux_meshlabserver_appimage.sh
+    - name: Deploy MeshLab
+      run : |
+        sh install/linux/linux_appimage.sh
+        mv distrib/*.AppImage .
+    - name: Upload Meshlab Portable
       uses: actions/upload-artifact@v1
       with:
-        name: meshlab_portable_linux
-        path: src/distrib/
-    - name: Uploading Meshlab AppImage
+        name: meshlab_linux_portable
+        path: distrib/
+    - name: Upload MeshlabServer AppImage
       uses: actions/upload-artifact@v1
       with:
-        name: meshlab_linux
-        path: src/MeshLab${{steps.envs.outputs.date}}-linux.AppImage
+        name: meshlabserver_linux_appimage
+        path: MeshLabServer${{steps.envs.outputs.date}}-linux.AppImage
+    - name: Upload Meshlab AppImage
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshlab_linux_appimage
+        path: MeshLab${{steps.envs.outputs.date}}-linux.AppImage
          
 
   ubuntu_build_cmake:
@@ -54,17 +57,19 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-    - name: Installing dependencies
+    - name: Checkout submodules
+      shell: bash
       run: |
-       sudo apt update
-       sudo apt install -y qt5-default qtscript5-dev libqt5xmlpatterns5-dev mesa-common-dev libglu1-mesa-dev lib3ds-dev libglew-dev libeigen3-dev libopenctm-dev libgmp-dev libqhull-dev cmake ninja-build 
-       cd ..
-       git clone --depth=1 --branch=devel https://github.com/cnr-isti-vclab/vcglib.git
-    - name: Configuring
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+    - name: Instal dependencies
       run: |
-        mkdir -p src/build
-        cd src/build
-        cmake .. -G Ninja
-    - name: Compiling meshlab
-      run: ninja -C src/build
+       sudo apt-get update
+       sudo apt-get install -y qt5-default qtscript5-dev libqt5xmlpatterns5-dev mesa-common-dev libglu1-mesa-dev lib3ds-dev libglew-dev libeigen3-dev libopenctm-dev libgmp-dev libqhull-dev cmake ninja-build 
+    - name: Configure
+      run: |
+        cmake src/ -G Ninja
+    - name: Build MeshLab
+      run: ninja -C .
 

@@ -9,36 +9,58 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setting MSVC
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+    - name: Downlaod Jom
+      run: |
+        Invoke-WebRequest -Uri "http://download.qt.io/official_releases/jom/jom_1_1_3.zip" -OutFile "jom_1_1_3.zip"
+        New-Item -Name "jom" -ItemType "directory"
+        Expand-Archive -Path jom_1_1_3.zip -DestinationPath .\jom
+        echo "::add-path::$(Get-Location)\jom"
+    - name: Setup env variables
+      id: envs
+      run: |
+        echo '::set-env name=VCINSTALLDIR::C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC'
+        echo "::set-output name=date::$(Get-Date -Format "yyyy.MM")"
+    - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
-    - name: Installing QT
-      uses: jurplel/install-qt-action@v2
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2.4.1
       with:
         modules: qtscript xmlpatterns
-    - name: Installing dependencies
-      run: |
-        cd ..
-        git clone --depth=1 --branch=devel https://github.com/cnr-isti-vclab/vcglib.git
-    - name: Compiling external
-      run: |
-        cd src\external
-        qmake external.pro -r
-        nmake
-    - name: Compiling MeshLab
+        #mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+    - name: Build MeshLab
       run: |
         cd src\
-        qmake meshlab_full.pro -r
-        nmake
-    - name: Creating MeshLab Portable ZIP
+        qmake
+        jom -j4 #Qt nmake for parallel build
+    - name: Deploy MeshLab
       run: |
-        cd src\distrib
-        Remove-Item sample\ -recurse
-        windeployqt --no-translations meshlab.exe
-    - name: Uploading Meshlab Portable 
+        .\install\windows\windows_deploy.ps1
+    - name: NSIS script
+      run: |
+        .\install\windows\windows_nsis_script.ps1
+    - name: Create Installer
+      uses: joncloud/makensis-action@v1
+      with:
+        script-file: "install/windows/resources/meshlab_final.nsi"
+    - name: Rename Installer
+      run: |
+        Rename-Item -Path install\windows\resources\MeshLab${{steps.envs.outputs.date}}.exe -NewName MeshLab${{steps.envs.outputs.date}}-windows.exe
+    - name: Upload Meshlab Portable 
       uses: actions/upload-artifact@v1
       with:
-        name: meshlab_portable_windows
-        path: src\distrib
+        name: meshlab_windows_portable
+        path: distrib
+    - name: Upload Meshlab Installer
+      uses: actions/upload-artifact@v1
+      with:
+        name: meshlab_windows_installer
+        path: install/windows/resources/MeshLab${{steps.envs.outputs.date}}-windows.exe
 
   windows_build_cmake:
     name: Build MeshLab (Windows, CMake)
@@ -46,27 +68,29 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setting MSVC
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+    - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
-    - name: Installing QT
-      uses: jurplel/install-qt-action@v2
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2.4.1
       with:
         modules: qtscript xmlpatterns
-    - name: Installing dependencies
-      run: |
-        cd ..
-        git clone --depth=1 --branch=devel https://github.com/cnr-isti-vclab/vcglib.git
+        #mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
     - name: Configure
       run: |
-        cd $env:GITHUB_WORKSPACE
         cmake -S ./src -B ./build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=install
         # -DBUILD_MINI=ON
-    - name: Build
+    - name: Build MeshLab
       run: |
         cmake --build $env:GITHUB_WORKSPACE/build --config RelWithDebInfo -j 4
         cmake --build $env:GITHUB_WORKSPACE/build --config RelWithDebInfo --target INSTALL
-    - name: Uploading MeshLab Portable
-      uses: actions/upload-artifact@v1
-      with:
-        name: meshlab_portable_windows_cmake
-        path: install
+#    - name: Uploading MeshLab Portable
+#      uses: actions/upload-artifact@v1
+#      with:
+#        name: meshlab_portable_windows_cmake
+#        path: install

@@ -375,9 +375,12 @@ void DecorateBasePlugin::drawQuotedLine(const Point3d &a,const Point3d &b, float
     // fmod ( -104.5 , 10) returns -4.5
     // So it holds that
 
-    if(aVal > 0 ) firstTick = aVal - fmod(aVal,tickScalarDistance) + tickScalarDistance;
-    if(aVal ==0 ) firstTick = tickScalarDistance;
-    if(aVal < 0 ) firstTick = aVal + fmod(fabs(aVal),tickScalarDistance);
+    if (aVal > 0 )
+        firstTick = aVal - fmod(aVal,tickScalarDistance) + tickScalarDistance;
+    else if(aVal ==0 )
+        firstTick = tickScalarDistance;
+    else //aVal < 0
+        firstTick = aVal + fmod(fabs(aVal),tickScalarDistance);
 
     // now we are sure that aVal < firstTick
     // let also be sure that there is enough space
@@ -714,12 +717,14 @@ void DecorateBasePlugin::DrawFaceLabel(MeshModel &m, QPainter *painter)
     glDisable(GL_LIGHTING);
     glColor3f(.4f,.4f,.4f);
     for(size_t i=0;i<m.cm.face.size();++i)
+    {
         if(!m.cm.face[i].IsD())
         {
             Point3m bar=Barycenter(m.cm.face[i]);
             glLabel::render(painter, bar,tr("%1").arg(i),glLabel::Mode(textColor));
         }
-        glPopAttrib();
+    }
+    glPopAttrib();
 }
 
 void DecorateBasePlugin::DrawEdgeLabel(MeshModel &m,QPainter *painter)
@@ -729,12 +734,14 @@ void DecorateBasePlugin::DrawEdgeLabel(MeshModel &m,QPainter *painter)
     glDisable(GL_LIGHTING);
     glColor3f(.4f,.4f,.4f);
     for(size_t i=0;i<m.cm.edge.size();++i)
+    {
         if(!m.cm.edge[i].IsD())
         {
             Point3m bar=(m.cm.edge[i].V(0)->P()+m.cm.edge[i].V(0)->P())/2.0f;
             glLabel::render(painter, bar,tr("%1").arg(i),glLabel::Mode(textColor));
         }
-        glPopAttrib();
+    }
+    glPopAttrib();
 }
 
 
