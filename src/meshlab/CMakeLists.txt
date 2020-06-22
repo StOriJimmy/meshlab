@@ -1,14 +1,15 @@
-# Copyright 2019 Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-### Generated file! Edit the templates in src/templates then re-run ./make-cmake.py
+### Generated file! Edit the templates in src/templates,
+### specifically src/templates/meshlab.cmake (custom for this directory),
+### then re-run ./make-cmake.py
 
 set(SOURCES
     additionalgui.cpp
     changetexturename.cpp
     customDialog.cpp
     filterScriptDialog.cpp
-    filterthread.cpp
     glarea.cpp
     glarea_setting.cpp
     layerDialog.cpp
@@ -24,8 +25,6 @@ set(SOURCES
     saveSnapshotDialog.cpp
     savemaskexporter.cpp
     stdpardialog.cpp
-    xmlgeneratorgui.cpp
-    xmlstdpardialog.cpp
     ${VCGDIR}/wrap/gui/trackball.cpp
     ${VCGDIR}/wrap/gui/trackmode.cpp
     ${VCGDIR}/wrap/gui/coordinateframe.cpp)
@@ -36,7 +35,6 @@ set(HEADERS
     changetexturename.h
     customDialog.h
     filterScriptDialog.h
-    filterthread.h
     glarea.h
     glarea_setting.h
     layerDialog.h
@@ -52,8 +50,6 @@ set(HEADERS
     savemaskexporter.h
     snapshotsetting.h
     stdpardialog.h
-    xmlgeneratorgui.h
-    xmlstdpardialog.h
     ${VCGDIR}/wrap/gui/trackball.h
     ${VCGDIR}/wrap/gui/trackmode.h
     ${VCGDIR}/wrap/gl/trimesh.h)
@@ -94,12 +90,15 @@ target_link_libraries(
 
 set_property(TARGET meshlab PROPERTY FOLDER Core)
 
-install(TARGETS meshlab DESTINATION ${MESHLAB_BIN_INSTALL_DIR} COMPONENT
-                MeshLab)
+install(
+    TARGETS meshlab
+    DESTINATION ${MESHLAB_BIN_INSTALL_DIR}
+    COMPONENT MeshLab)
 
 if(Qt5_windeployqt_EXECUTABLE AND BUILD_WITH_WINDEPLOYQT_POST_BUILD)
     add_custom_command(
-        TARGET meshlab POST_BUILD
+        TARGET meshlab
+        POST_BUILD
         COMMAND "${Qt5_windeployqt_EXECUTABLE}" --no-translations
                 $<TARGET_FILE_NAME:meshlab>
         WORKING_DIRECTORY $<TARGET_FILE_DIR:meshlab>

@@ -22,6 +22,7 @@
 ****************************************************************************/
 
 #include "filter_img_patch_param.h"
+#include <common/GLExtensionsManager.h>
 #include <QtGui>
 #include <wrap/gl/shot.h>
 #include <vcg/space/rect_packer.h>
@@ -193,7 +194,7 @@ bool FilterImgPatchParamPlugin::applyFilter( QAction *act,
 
     
     glContext->makeCurrent();
-    if( glewInit() != GLEW_OK )
+    if( !GLExtensionsManager::initializeGLextensions_notThrowing() )
     {
         this->errorMessage="Failed GLEW initialization";
         return false;
@@ -293,7 +294,7 @@ bool FilterImgPatchParamPlugin::applyFilter( QAction *act,
                 TexturePainter painter( *m_Context, par.getInt("textureSize") );
                 if( (retValue = painter.isInitialized()) )
                 {
-                    QTime t; t.start();
+                    QElapsedTimer t; t.start();
                     painter.paint( patches );
                     if( par.getBool("colorCorrection") )
                         painter.rectifyColor( patches, par.getInt("colorCorrectionFilterSize") );
@@ -901,7 +902,7 @@ void FilterImgPatchParamPlugin::patchBasedTextureParameterization( RasterPatchMa
     // Computes the visibility set for all mesh faces. It contains the set of all images
     // into which the face is visible, as well as a reference image, namely the one with
     // the most orthogonal viewing angle.
-    QTime t; t.start();
+    QElapsedTimer t; t.start();
     int weightMask = VisibleSet::W_ORIENTATION;
     if( par.getBool("useDistanceWeight") )
         weightMask |= VisibleSet::W_DISTANCE;

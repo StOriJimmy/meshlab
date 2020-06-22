@@ -1,7 +1,9 @@
-# Copyright 2019 Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-### Generated file! Edit the templates in src/templates then re-run ./make-cmake.py
+### Generated file! Edit the templates in src/templates,
+### specifically src/templates/edit_align.cmake (custom for this directory),
+### then re-run ./make-cmake.py
 
 # Only build if we have newuoa
 if(TARGET external-newuoa)
@@ -9,7 +11,6 @@ if(TARGET external-newuoa)
     set(SOURCES
         align/align_parameter.cpp
         align/AlignGlobal.cpp
-        align/AlignPair.cpp
         align/OccupancyGrid.cpp
         alignDialog.cpp
         AlignPairDialog.cpp
@@ -17,7 +18,6 @@ if(TARGET external-newuoa)
         edit_align_factory.cpp
         edit_align.cpp
         meshtree.cpp
-        point_matching_scale.cpp
         ../../meshlab/stdpardialog.cpp
         ${VCGDIR}/wrap/gui/trackball.cpp
         ${VCGDIR}/wrap/gui/trackmode.cpp
@@ -26,7 +26,6 @@ if(TARGET external-newuoa)
     set(HEADERS
         align/align_parameter.h
         align/AlignGlobal.h
-        align/AlignPair.h
         align/OccupancyGrid.h
         alignDialog.h
         AlignPairDialog.h
@@ -61,8 +60,10 @@ if(TARGET external-newuoa)
     set_property(TARGET edit_align PROPERTY LIBRARY_OUTPUT_DIRECTORY
                                             ${MESHLAB_PLUGIN_OUTPUT_DIR})
 
-    install(TARGETS edit_align DESTINATION ${MESHLAB_PLUGIN_INSTALL_DIR}
-                    COMPONENT Plugins)
+    install(
+        TARGETS edit_align
+        DESTINATION ${MESHLAB_PLUGIN_INSTALL_DIR}
+        COMPONENT Plugins)
 
 else()
     message(

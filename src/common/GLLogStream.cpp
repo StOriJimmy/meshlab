@@ -92,11 +92,25 @@ void GLLogStream::Clear()
 	S.clear();
 }
 
-void GLLogStream::Log( int Level, const char * buf )
+void GLLogStream::Log(int Level, const char * buf )
 {
 	QString tmp(buf);
 	S.push_back(std::make_pair(Level,tmp));
 	qDebug("LOG: %i %s",Level,buf);
+	emit logUpdated();
+}
+
+void GLLogStream::Log(int Level, const string& logMessage)
+{
+	S.push_back(std::make_pair(Level, QString::fromStdString(logMessage)));
+	qDebug("LOG: %i %s",Level, logMessage.c_str());
+	emit logUpdated();
+}
+
+void GLLogStream::Log(int Level, const QString& logMessage)
+{
+	S.push_back(std::make_pair(Level, logMessage));
+	qDebug("LOG: %i %s",Level, logMessage.toStdString().c_str());
 	emit logUpdated();
 }
 

@@ -26,6 +26,7 @@ $Log: meshedit.cpp,v $
 ****************************************************************************/
 
 #include "edit_align.h"
+#include <common/GLExtensionsManager.h>
 #include <meshlab/glarea.h>
 #include <meshlab/stdpardialog.h>
 #include <wrap/qt/trackball.h>
@@ -33,7 +34,15 @@ $Log: meshedit.cpp,v $
 #include "AlignPairDialog.h"
 #include "align/align_parameter.h"
 #include <vcg/space/point_matching.h>
+#include <vcg/complex/algorithms/point_matching_scale.h>
+
 using namespace vcg;
+
+//todo: remove these orrible defs from here
+//make vcg::PointMatchingScale indipendent
+std::vector<vcg::Point3d>* vcg::PointMatchingScale::fix;
+std::vector<vcg::Point3d>* vcg::PointMatchingScale::mov;
+vcg::Box3d vcg::PointMatchingScale::b;
 
 EditAlignPlugin::EditAlignPlugin()
 {
@@ -106,7 +115,6 @@ bool EditAlignPlugin::StartEdit(MeshDocument& md, GLArea * gla, MLSceneGLSharedD
     _gla= gla;
 	_shared = cont;
 
-	//GLenum err = glewInit();
 	if ((_gla == NULL) || (_shared == NULL) || (md.meshList.size() < 1))
 		return false;
 
@@ -138,8 +146,7 @@ bool EditAlignPlugin::StartEdit(MeshDocument& md, GLArea * gla, MLSceneGLSharedD
     _gla->setCursor(QCursor(QPixmap(":/images/cur_align.png"),1,1));
     if(alignDialog==0)
     {
-		GLenum err = glewInit();
-		if (err != GLEW_OK)
+        if (!GLExtensionsManager::initializeGLextensions_notThrowing())
 			return false;
 
         alignDialog=new AlignDialog(_gla->window(),this);

@@ -1,4 +1,5 @@
 #include "ml_shared_data_context.h"
+#include "GLExtensionsManager.h"
 #include "mlexception.h"
 #include <vector>
 
@@ -48,17 +49,10 @@ MLSceneGLSharedDataContext::PerMeshMultiViewManager* MLSceneGLSharedDataContext:
 }
 
 void MLSceneGLSharedDataContext::initializeGL()
-{   
-    glewExperimental=GL_TRUE;
-
-    QGLContext* ctx = makeCurrentGLContext();
-    GLenum err = glewInit();
+{
+    QGLContext *ctx = makeCurrentGLContext();
+    GLExtensionsManager::initializeGLextensions();
     doneCurrentGLContext(ctx);
-    
-    if (err != GLEW_OK ) {
-        throw MLException("MLSceneGLSharedDataContext: GLEW initialization failed\n");
-    }
-    
 }
 
 void MLSceneGLSharedDataContext::setRenderingDataPerMeshView( int mmid,QGLContext* viewerid,const MLRenderingData& perviewdata )
@@ -399,8 +393,8 @@ bool MLSceneGLSharedDataContext::isBORenderingAvailable( int mmid )
 
 void MLSceneGLSharedDataContext::updateGPUMemInfo()
 {   
+    initializeGL();
     QGLContext* ctx = makeCurrentGLContext();
-
 	GLint allmem = 0;
     glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &allmem);
     GLint currentallocated = 0;
@@ -916,10 +910,10 @@ MLRenderingData::MLRenderingData()
     _glopts = new MLPerViewGLOptions();
 }
 
-MLRenderingData::MLRenderingData( const MLRenderingData& dt )
-    :PerViewData<MLPerViewGLOptions>(dt)
-{
-}
+//MLRenderingData::MLRenderingData( const MLRenderingData& dt )
+//    :PerViewData<MLPerViewGLOptions>(dt)
+//{
+//}
 
 bool MLRenderingData::set( MLRenderingData::PRIMITIVE_MODALITY pm,const MLRenderingData::RendAtts& atts )
 {

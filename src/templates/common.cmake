@@ -1,4 +1,11 @@
 {% extends "CMakeLists.template.cmake" %}
+
+{% block before_vars %}
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../ML_VERSION")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../../ML_VERSION" MESHLAB_VERSION)
+    add_definitions(-DMESHLAB_VERSION=${MESHLAB_VERSION})
+endif()
+{% endblock %}
 {% block outputdir %}{%endblock%}
 {% block add_target %}
 set(TARGET_TYPE SHARED)
@@ -33,7 +40,7 @@ target_link_libraries({{name}}
 {% block install %}
 if(NOT WIN32)
     install(TARGETS {{name}}
-        DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        DESTINATION ${MESHLAB_LIB_INSTALL_DIR})
 endif()
 
 {% endblock %}

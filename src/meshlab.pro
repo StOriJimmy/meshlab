@@ -31,31 +31,11 @@ SUBDIRS = \ #sub projects names
     filter_measure \
     filter_meshing
 
-## where to find the sub projects - give the folders ##
-external.subdir = external
-common.subdir = common
-meshlab.subdir = meshlab
-meshlabserver.subdir = meshlabserver
-io_base.subdir = meshlabplugins/io_base
-decorate_base.subdir = meshlabplugins/decorate_base
-filter_measure.subdir = meshlabplugins/filter_measure
-filter_meshing.subdir = meshlabplugins/filter_meshing
-
-## what subproject depends on others ##
-common.depends = external
-meshlab.depends = common
-meshlabserver.depends = common
-io_base.depends = common
-decorate_base.depends = common
-filter_measure.depends = common
-filter_meshing.depends = common
-
-meshlab_mini {
-    message(Compiling only MeshLab Mini!)
-}
 !meshlab_mini {
-
-#Other sub project, compiled only when config is not MeshLab Mini
+# Other sub project, compiled only when config is not MeshLab Mini
+# If you want to compile someone of these sub project with the meshlab_mini
+# configuration, just copy-paste the name of the filter in the
+# meshlab_mini SUBDIRS
 SUBDIRS += \ #sub projects names
 # IO plugins
     io_3ds \
@@ -70,12 +50,12 @@ SUBDIRS += \ #sub projects names
     io_txt \
     io_u3d \
 # Filter samples
-    sampleedit \
-    samplefilter \
-    samplefilterdyn \
+    edit_sample \
+    filter_sample \
+    filter_sample_dyn \
     filter_createiso \
     filter_geodesic \
-    sample_filtergpu \
+    filter_sample_gpu \
 # Filter plugins
     filter_ao \
     filter_camera \
@@ -92,7 +72,7 @@ SUBDIRS += \ #sub projects names
     filter_layer \
     filter_mls \
     filter_mutualglobal \
-    filter_mutualinfoxml \
+    filter_mutualinfo \
     filter_plymc \
     filter_qhull \
     filter_quality \
@@ -121,9 +101,30 @@ SUBDIRS += \ #sub projects names
     edit_point \
     edit_referencing \
     edit_quality \
-    edit_select
+    edit_select \
+    edit_pickpoints
+
+}
+meshlab_mini {
+    message(Compiling only MeshLab Mini!)
+}
+
+win32 {
+    SUBDIRS+= \
+        use_cpu_opengl
+}
 
 ## where to find the sub projects - give the folders ##
+# meshlab_mini subdirs:
+external.subdir = external
+common.subdir = common
+meshlab.subdir = meshlab
+meshlabserver.subdir = meshlabserver
+io_base.subdir = meshlabplugins/io_base
+decorate_base.subdir = meshlabplugins/decorate_base
+filter_measure.subdir = meshlabplugins/filter_measure
+filter_meshing.subdir = meshlabplugins/filter_meshing
+use_cpu_opengl.subdir = use_cpu_opengl
 # IO plugins
 io_3ds.subdir = meshlabplugins/io_3ds
 io_bre.subdir = meshlabplugins/io_bre
@@ -137,12 +138,12 @@ io_pdb.subdir = meshlabplugins/io_pdb
 io_txt.subdir = meshlabplugins/io_txt
 io_u3d.subdir = meshlabplugins/io_u3d
 # Filter samples
-sampleedit.subdir = sampleplugins/sampleedit
-samplefilter.subdir = sampleplugins/samplefilter
-samplefilterdyn.subdir = sampleplugins/samplefilterdyn
-filter_createiso.subdir = sampleplugins/filter_createiso
-filter_geodesic.subdir = sampleplugins/filter_geodesic
-sample_filtergpu.subdir = sampleplugins/sample_filtergpu
+edit_sample.subdir = meshlabplugins/edit_sample
+filter_sample.subdir = meshlabplugins/filter_sample
+filter_sample_dyn.subdir = meshlabplugins/filter_sample_dyn
+filter_createiso.subdir = meshlabplugins/filter_createiso
+filter_geodesic.subdir = meshlabplugins/filter_geodesic
+filter_sample_gpu.subdir = meshlabplugins/filter_sample_gpu
 # Filter plugins
 filter_ao.subdir = meshlabplugins/filter_ao
 filter_camera.subdir = meshlabplugins/filter_camera
@@ -159,7 +160,7 @@ filter_isoparametrization.subdir = meshlabplugins/filter_isoparametrization
 filter_layer.subdir = meshlabplugins/filter_layer
 filter_mls.subdir = meshlabplugins/filter_mls
 filter_mutualglobal.subdir = meshlabplugins/filter_mutualglobal
-filter_mutualinfoxml.subdir = meshlabplugins/filter_mutualinfoxml
+filter_mutualinfo.subdir = meshlabplugins/filter_mutualinfo
 filter_plymc.subdir = meshlabplugins/filter_plymc
 filter_qhull.subdir = meshlabplugins/filter_qhull
 filter_quality.subdir = meshlabplugins/filter_quality
@@ -189,8 +190,17 @@ edit_point.subdir = meshlabplugins/edit_point
 edit_referencing.subdir = meshlabplugins/edit_referencing
 edit_quality.subdir = meshlabplugins/edit_quality
 edit_select.subdir = meshlabplugins/edit_select
+edit_pickpoints.subdir = meshlabplugins/edit_pickpoints
 
 ## what subproject depends on others ##
+# meshlab_mini subdirs
+common.depends = external
+meshlab.depends = common
+meshlabserver.depends = common
+io_base.depends = common
+decorate_base.depends = common
+filter_measure.depends = common
+filter_meshing.depends = common
 # IO plugins
 io_3ds.depends = common
 io_bre.depends = common
@@ -204,12 +214,12 @@ io_pdb.depends = common
 io_txt.depends = common
 io_u3d.depends = common
 # Filter samples
-sampleedit.depends = common
-samplefilter.depends = common
-samplefilterdyn.depends = common
+edit_sample.depends = common
+filter_sample.depends = common
+filter_sample_dyn.depends = common
 filter_createiso.depends = common
 filter_geodesic.depends = common
-sample_filtergpu.depends = common
+filter_sample_gpu.depends = common
 # Filter plugins
 filter_ao.depends = common
 filter_camera.depends = common
@@ -226,7 +236,7 @@ filter_isoparametrization.depends = common
 filter_layer.depends = common
 filter_mls.depends = common
 filter_mutualglobal.depends = common
-filter_mutualinfoxml.depends = common
+filter_mutualinfo.depends = common
 filter_plymc.depends = common
 filter_qhull.depends = common
 filter_quality.depends = common
@@ -256,20 +266,17 @@ edit_point.depends = common
 edit_referencing.depends = common
 edit_quality.depends = common
 edit_select.depends = common
+edit_pickpoints.depends = common
 
 #no longer needed# meshlabplugins/filter_aging \
 #no longer needed# meshlabplugins/filter_bnpts \
 #no longer needed# meshlabplugins/filter_colorize \
-#no longer supported#   meshlabplugins/edit_pickpoints \
-
-}
 
 
 # if distrib folder is not in $$PWD/../distrib (shadow build case),
 # we need to copy all the files inside $$PWD/../distrib in the actual
 # distrib folder ($$OUT_PWD/distrib or $$MESHLAB_DISTRIB_DIRECTORY)
-!equals(PWD, $$OUT_PWD) {
-
+!equals(PWD, $$OUT_PWD) : !equals(PWD, $$OUT_PWD/src) {
     #copying the "lib" folder inside the $$OUT_PWD/distrib
     win32:copydir.commands = $(COPY_DIR) \"$$shell_path($$PWD/../distrib)\" \"$$shell_path($$OUT_PWD/distrib)\"
     !win32:copydir.commands = $(COPY_DIR) \"$$shell_path($$PWD/../distrib)\" \"$$shell_path($$OUT_PWD)\"
@@ -278,4 +285,31 @@ edit_select.depends = common
     export(copydir.commands)
 
     QMAKE_EXTRA_TARGETS += first copydir
+}
+
+#
+# this is just for project info
+# prints all the system libraries that meshlab is using instead of
+# the ones placed in the external folder.
+# The libraris are included effectively in general.pri and
+# in external.pro
+#
+include(find_system_libs.pri)
+system_eigen3 {
+    message("Using system eigen3")
+}
+system_glew {
+    message("Using system glew")
+}
+system_openctm {
+    message("Using system openctm")
+}
+system_lib3ds {
+    message("Using system lib3ds")
+}
+system_muparser {
+    message("Using system muparser")
+}
+system_qhull {
+    message("Using system qhull")
 }

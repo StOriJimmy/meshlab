@@ -48,6 +48,7 @@ option(ALLOW_BUNDLED_MUPARSER "Allow use of bundled muparser source" ON)
 option(ALLOW_BUNDLED_OPENCTM "Allow use of bundled OpenCTM source" ON)
 option(ALLOW_BUNDLED_SSYNTH "Allow use of bundled structure-synth source" ON)
 option(ALLOW_BUNDLED_QHULL "Allow use of bundled Qhull source" ON)
+option(ALLOW_BUNDLED_U3D "Allow use of bundled u3d source" ON)
 
 option(ALLOW_SYSTEM_EIGEN "Allow use of system-provided Eigen" ON)
 option(ALLOW_SYSTEM_GLEW "Allow use of system-provided GLEW" ON)
@@ -67,7 +68,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 find_package(
     Qt5
-    COMPONENTS OpenGL Xml XmlPatterns Script
+    COMPONENTS OpenGL Xml XmlPatterns
     REQUIRED)
 
 message(STATUS "Searching for required components with bundled fallback")
@@ -169,6 +170,9 @@ add_subdirectory(common)
 set(CMAKE_INSTALL_RPATH $ORIGIN/../${MESHLAB_LIB_INSTALL_DIR};$ORIGIN/../${CMAKE_INSTALL_LIBDIR})
 add_subdirectory(meshlab)
 add_subdirectory(meshlabserver)
+if (WIN32)
+    add_subdirectory(use_cpu_opengl)
+endif()
 set(CMAKE_INSTALL_RPATH)
 
 ### Plugin subdirectories
@@ -218,7 +222,7 @@ else()
         meshlabplugins/filter_meshing
         meshlabplugins/filter_mls
         meshlabplugins/filter_mutualglobal
-        meshlabplugins/filter_mutualinfoxml # TODO rename dir - actually named filter_mutualinfo
+        meshlabplugins/filter_mutualinfo
         meshlabplugins/filter_plymc
         meshlabplugins/filter_qhull
         meshlabplugins/filter_quality
@@ -248,7 +252,7 @@ else()
         meshlabplugins/edit_measure
         meshlabplugins/edit_mutualcorrs
         meshlabplugins/edit_paint
-        # meshlabplugins/edit_pickpoints # not in qmake file?
+        meshlabplugins/edit_pickpoints
         meshlabplugins/edit_point
         meshlabplugins/edit_referencing
         meshlabplugins/edit_quality
@@ -257,31 +261,13 @@ else()
         # meshlabplugins/edit_texture # not in qmake file?
 
         # Sample Plugins
-        sampleplugins/sampleedit
-        sampleplugins/samplefilter
-        sampleplugins/samplefilterdyn
-        sampleplugins/filter_createiso
-        sampleplugins/filter_geodesic
-        sampleplugins/sample_filtergpu)
+        meshlabplugins/edit_sample
+        meshlabplugins/filter_sample
+        meshlabplugins/filter_sample_dyn
+        meshlabplugins/filter_createiso
+        meshlabplugins/filter_geodesic
+        meshlabplugins/filter_sample_gpu)
 endif()
-
-function(meshlab_install_plugin_xml FN OUTVAR)
-    get_filename_component(NAME_ONLY ${FN} NAME)
-    set(OUTFN ${MESHLAB_PLUGIN_OUTPUT_DIR}/${NAME_ONLY})
-    add_custom_command(
-        OUTPUT ${OUTFN}
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${MESHLAB_PLUGIN_OUTPUT_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${FN}" "${OUTFN}"
-        COMMENT "Copying ${NAME_ONLY} to plugin build directory"
-        VERBATIM)
-    install(
-        FILES ${FN}
-        DESTINATION ${MESHLAB_PLUGIN_INSTALL_DIR}
-        COMPONENT Plugins)
-    set(${OUTVAR}
-        ${OUTFN}
-        PARENT_SCOPE)
-endfunction()
 
 message(STATUS "\nConfiguring plugins")
 foreach(PLUGIN ${POSSIBLE_PLUGINS})
@@ -354,8 +340,8 @@ if(INSTALL_SAMPLE_RANGEMAPS)
 endif()
 
 if(NOT WIN32 AND NOT APPLE)
-    install(FILES ../install/linux/resources/meshlab.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    install(FILES ../install/meshlab.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../install/linux/resources/meshlab.desktop" DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../install/meshlab.png" DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/pixmaps)
 endif()
 
 if(Qt5_windeployqt_EXECUTABLE AND BUILD_WITH_WINDEPLOYQT_POST_BUILD)

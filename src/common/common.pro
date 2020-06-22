@@ -4,10 +4,9 @@ EXIF_DIR = ../external/jhead-3.04
 QT += opengl
 QT += xml
 QT += xmlpatterns
-QT += script
 
 TEMPLATE = lib
-TARGET = common
+TARGET = meshlab-common
 DEPENDPATH += .
 
 DESTDIR = $$MESHLAB_DISTRIB_DIRECTORY/lib
@@ -16,12 +15,6 @@ win32-msvc:CONFIG += staticlib
 win32-g++:DLLDESTDIR = $$MESHLAB_DISTRIB_DIRECTORY/lib
 
 linux:CONFIG += dll
-
-
-# The following lines are necessary to avoid that when you re-compile everything you still find old dll in the plugins dir
-macx:QMAKE_CLEAN +=  $$MESHLAB_DISTRIB_DIRECTORY/plugins/*.dylib
-win32:QMAKE_CLEAN +=  $$MESHLAB_DISTRIB_DIRECTORY/plugins/*.dll
-linux:QMAKE_CLEAN +=  $$MESHLAB_DISTRIB_DIRECTORY/plugins/*.so
 
 INCLUDEPATH *= \
     ../.. \
@@ -39,9 +32,16 @@ INCLUDEPATH *= \
     DEFINES += GLEW_STATIC
 }
 
+# defining meshlab version
+exists(../../ML_VERSION){
+    MESHLAB_VERSION = $$cat(../../ML_VERSION)
+    message(MeshLab Version: $$MESHLAB_VERSION)
+    DEFINES += "MESHLAB_VERSION=$$MESHLAB_VERSION"
+}
+
 # Input
 HEADERS += 	\
-    compile_time_version.h \
+    GLExtensionsManager.h \
     filterparameter.h \
     filterscript.h \
     GLLogStream.h \
@@ -49,27 +49,22 @@ HEADERS += 	\
     ml_mesh_type.h \
     meshmodel.h \
     pluginmanager.h \
-    scriptinterface.h \
-    xmlfilterinfo.h \
     mlexception.h \
     mlapplication.h \
-    scriptsyntax.h \
     meshlabdocumentxml.h \
     ml_shared_data_context.h \
     ml_selection_buffers.h \
     meshlabdocumentxml.h
 
 SOURCES += \
+    GLExtensionsManager.cpp \
     filterparameter.cpp \
     interfaces.cpp \
     filterscript.cpp \
     GLLogStream.cpp \
     meshmodel.cpp \
     pluginmanager.cpp \
-    scriptinterface.cpp \
-    xmlfilterinfo.cpp \
     mlapplication.cpp \
-    scriptsyntax.cpp \
     searcher.cpp \
     meshlabdocumentxml.cpp \
     meshlabdocumentbundler.cpp \
@@ -77,13 +72,13 @@ SOURCES += \
     ml_selection_buffers.cpp
 
 macx:QMAKE_POST_LINK = "\
-    if [ -d  $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/MacOS/ ]; \
+    if [ -d  $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/Frameworks/ ]; \
     then  \
         echo "Copying";  \
     else  \
-        mkdir -p $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/MacOS;  \
+        mkdir -p $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/Frameworks;  \
     fi;   \
-    cp $$MESHLAB_DISTRIB_DIRECTORY/lib/libcommon.* $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/MacOS/ ;\
+    cp $$MESHLAB_DISTRIB_DIRECTORY/lib/libmeshlab-common.* $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/Frameworks/ ;\
 #    if [ -d ../external/ ];\
 #    then \
 #        echo "ok external dir exists"; \

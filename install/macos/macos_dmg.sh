@@ -8,16 +8,23 @@
 # 
 # You can give as argument the DISTRIB_PATH containing meshlab.app.
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-cd $DIR #move to script directory
+#realpath function
+realpath() {
+    [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+}
 
 #checking for parameters
 if [ "$#" -eq 0 ]
 then
-    DISTRIB_PATH=$PWD/../../distrib
+    DISTRIB_PATH="../../distrib"
 else
-    DISTRIB_PATH=$1
+    DISTRIB_PATH=$( realpath $1 )
 fi
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+cd $DIR #move to script directory
+
+DISTRIB_PATH=$( realpath $DISTRIB_PATH)
 
 if ! [ -e $DISTRIB_PATH/meshlab.app -a -d $DISTRIB_PATH/meshlab.app ]
 then
@@ -35,7 +42,7 @@ sed -i '' "s%SOURCE_PATH%$SOURCE_PATH%g" resources/meshlab_dmg_final.json
 rm -f $DISTRIB_PATH/*.dmg
 
 echo "Running appdmg"
-appdmg resources/meshlab_dmg_final.json $DISTRIB_PATH/MeshLab$(date +%Y.%m).dmg
+appdmg resources/meshlab_dmg_final.json $DISTRIB_PATH/MeshLab$(cat ../../ML_VERSION).dmg
 
 #at this point, distrib folder contains a DMG MeshLab file
 echo "distrib folder now contains a DMG file"

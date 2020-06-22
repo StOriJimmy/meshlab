@@ -23,13 +23,12 @@
 
 
 #include "../common/interfaces.h"
-#include "../common/xmlfilterinfo.h"
 #include "../common/searcher.h"
 #include "../common/mlapplication.h"
+#include "../common/mlexception.h"
 
 #include <QToolBar>
 #include <QProgressBar>
-#include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QFileOpenEvent>
@@ -51,14 +50,10 @@
 QProgressBar *MainWindow::qb;
 
 MainWindow::MainWindow()
-	:mwsettings(), gpumeminfo(NULL), xmlfiltertimer(), wama()
+	:mwsettings(), httpReq(this), gpumeminfo(NULL), wama()
 {
 	_currviewcontainer = NULL;
-	//xmlfiltertimer will be called repeatedly, so like Qt documentation suggests, the first time start function should be called.
-	//Subsequently restart function will be invoked.
 	setContextMenuPolicy(Qt::NoContextMenu);
-	xmlfiltertimer.start();
-	//xmlfiltertimer.elapsed();
 
 	//workspace = new QWorkspace(this);
 	mdiarea = new QMdiArea(this);
@@ -76,8 +71,8 @@ MainWindow::MainWindow()
 	connect(windowMapper, SIGNAL(mapped(QWidget*)), this, SLOT(wrapSetActiveSubWindow(QWidget *)));
 	// Quando si passa da una finestra all'altra aggiorna lo stato delle toolbar e dei menu
 	connect(mdiarea, SIGNAL(subWindowActivated(QMdiSubWindow *)), this, SLOT(switchCurrentContainer(QMdiSubWindow *)));
-	httpReq = new QNetworkAccessManager(this);
-	connect(httpReq, SIGNAL(finished(QNetworkReply*)), this, SLOT(connectionDone(QNetworkReply*)));
+	//httpReq = new QNetworkAccessManager(this);
+	connect(&httpReq, SIGNAL(finished(QNetworkReply*)), this, SLOT(connectionDone(QNetworkReply*)));
 
 	QIcon icon;
 	icon.addPixmap(QPixmap(":images/eye48.png"));
@@ -102,7 +97,6 @@ MainWindow::MainWindow()
 	createMenus();
 	gpumeminfo = new vcg::QtThreadSafeMemoryInfo(mwsettings.maxgpumem);
 	stddialog = 0;
-	xmldialog = 0;
 	setAcceptDrops(true);
 	mdiarea->setAcceptDrops(true);
 	setWindowTitle(MeshLabApplication::shortName());
@@ -118,23 +112,9 @@ MainWindow::MainWindow()
     nvgpumeminfo->setStyleSheet(" QProgressBar { background-color: #d0d0d0; border: 2px solid grey; border-radius: 0px; text-align: center; }"
                                 " QProgressBar::chunk {background-color: #80c080; width: 1px;}");
 	statusBar()->addPermanentWidget(nvgpumeminfo, 0);
-	//updateMenus();
 	newProject();
-	//PM should be initialized before passing it to PluginGeneratorGUI
-	plugingui = new PluginGeneratorGUI(PM, this);
-	plugingui->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::BottomDockWidgetArea | Qt::RightDockWidgetArea);
-	addDockWidget(Qt::LeftDockWidgetArea, plugingui);
 	updateCustomSettings();
-	connect(plugingui, SIGNAL(scriptCodeExecuted(const QScriptValue&, const int, const QString&)), this, SLOT(scriptCodeExecuted(const QScriptValue&, const int, const QString&)));
-	connect(plugingui, SIGNAL(insertXMLPluginRequested(const QString&, const QString&)), this, SLOT(loadAndInsertXMLPlugin(const QString&, const QString&)));
-	connect(plugingui, SIGNAL(historyRequest()), this, SLOT(sendHistory()));
-	//QWidget* wid = reinterpret_cast<QWidget*>(ar->parent());
-	//wid->showMaximized();
-	//ar->update();
 
-	//qb->setAutoClose(true);
-	//qb->setMinimumDuration(0);
-	//qb->reset();
 	connect(this, SIGNAL(updateLayerTable()), this, SLOT(updateLayerDialog()));
 	connect(layerDialog, SIGNAL(removeDecoratorRequested(QAction*)), this, SLOT(switchOffDecorator(QAction*)));
 }
@@ -463,11 +443,6 @@ connectRenderModeActionList(rendlist);*/
 
 	connect(unsplitGroupAct, SIGNAL(triggered(QAction *)), this, SLOT(unsplitFromHandle(QAction *)));
 
-	//TOOL MENU
-	showFilterEditAct = new QAction(tr("XML Plugin Editor GUI"), this);
-	showFilterEditAct->setEnabled(true);
-	connect(showFilterEditAct, SIGNAL(triggered()), this, SLOT(showXMLPluginEditorGui()));
-
 }
 
 void MainWindow::createToolBars()
@@ -668,9 +643,6 @@ void MainWindow::initSearchEngine()
 	for (QMap<QString, QAction*>::iterator it = PM.actionFilterMap.begin(); it != PM.actionFilterMap.end(); ++it)
 		initItemForSearching(it.value());
 
-	for (QMap<QString, MeshLabXMLFilterContainer>::iterator it = PM.stringXMLFilterMap.begin(); it != PM.stringXMLFilterMap.end(); ++it)
-		initItemForSearching(it.value().act);
-
 	initMenuForSearching(editMenu);
 	initMenuForSearching(renderMenu);
 }
@@ -842,114 +814,6 @@ void MainWindow::fillFilterMenu()
 
 
 	}
-
-	QMap<QString, MeshLabXMLFilterContainer>::iterator xmlit;
-	for (xmlit = PM.stringXMLFilterMap.begin(); xmlit != PM.stringXMLFilterMap.end(); ++xmlit)
-	{
-		try
-		{
-			//MeshLabFilterInterface * iFilter= xmlit.value().filterInterface;
-			QAction *filterAction = xmlit.value().act;
-			if (filterAction == NULL)
-				throw MLException("Invalid filter action value.");
-			MLXMLPluginInfo* info = xmlit.value().xmlInfo;
-			if (filterAction == NULL)
-				throw MLException("Invalid filter info value.");
-			QString filterName = xmlit.key();
-
-			QString help = info->filterHelp(filterName);
-			filterAction->setToolTip(help + getDecoratedFileName(filterAction->data().toString()));
-			connect(filterAction, SIGNAL(triggered()), this, SLOT(startFilter()));
-			QString filterClasses = info->filterAttribute(filterName, MLXMLElNames::filterClass);
-			QStringList filterClassesList = filterClasses.split(QRegExp("\\W+"), QString::SkipEmptyParts);
-			foreach(QString nameClass, filterClassesList)
-			{
-				if (nameClass == QString("FaceColoring"))
-				{
-					filterMenuColorize->addAction(filterAction);
-				}
-				if (nameClass == QString("VertexColoring"))
-				{
-					filterMenuColorize->addAction(filterAction);
-				}
-				if (nameClass == QString("Selection"))
-				{
-					filterMenuSelect->addAction(filterAction);
-				}
-				if (nameClass == QString("Cleaning"))
-				{
-					filterMenuClean->addAction(filterAction);
-				}
-				if (nameClass == QString("Remeshing"))
-				{
-					filterMenuRemeshing->addAction(filterAction);
-				}
-				if (nameClass == QString("Smoothing"))
-				{
-					filterMenuSmoothing->addAction(filterAction);
-				}
-				if (nameClass == QString("Normal"))
-				{
-					filterMenuNormal->addAction(filterAction);
-				}
-				if (nameClass == QString("Quality"))
-				{
-					filterMenuQuality->addAction(filterAction);
-				}
-				if (nameClass == QString("Measure"))
-				{
-					filterMenuQuality->addAction(filterAction);
-				}
-				if (nameClass == QString("Layer"))
-				{
-					filterMenuMeshLayer->addAction(filterAction);
-				}
-				if (nameClass == QString("RasterLayer"))
-				{
-					filterMenuRasterLayer->addAction(filterAction);
-				}
-				if (nameClass == QString("MeshCreation"))
-				{
-					filterMenuCreate->addAction(filterAction);
-				}
-				if (nameClass == QString("RangeMap"))
-				{
-					filterMenuRangeMap->addAction(filterAction);
-				}
-				if (nameClass == QString("PointSet"))
-				{
-					filterMenuPointSet->addAction(filterAction);
-				}
-				if (nameClass == QString("Sampling"))
-				{
-					filterMenuSampling->addAction(filterAction);
-				}
-				if (nameClass == QString("Texture"))
-				{
-					filterMenuTexture->addAction(filterAction);
-				}
-				if (nameClass == QString("Polygonal"))
-				{
-					filterMenuPolygonal->addAction(filterAction);
-				}
-				if (nameClass == QString("Camera"))
-				{
-					filterMenuCamera->addAction(filterAction);
-				}
-				//  //  MeshFilterInterface::Generic :
-				if (nameClass == QString("Generic"))
-				{
-					filterMenu->addAction(filterAction);
-				}
-				//if(!filterAction->icon().isNull())
-				//    filterToolBar->addAction(filterAction);
-			}
-		}
-		catch (ParsingException &e)
-		{
-			meshDoc()->Log.Logf(GLLogStream::SYSTEM, e.what(), "");
-		}
-	}
 }
 
 void MainWindow::fillDecorateMenu()
@@ -1118,7 +982,7 @@ void MainWindow::sendUsAMail()
 
 		congratsDialog->exec();
 		if (congratsDialog->result() == QDialog::Accepted)
-			QDesktopServices::openUrl(QUrl("mailto:p.cignoni@isti.cnr.it;g.ranzuglia@isti.cnr.it?subject=[MeshLab] Reporting Info on MeshLab Usage"));
+			QDesktopServices::openUrl(QUrl("mailto:paolo.cignoni@isti.cnr.it;alessandro.muntoni@isti.cnr.it?subject=[MeshLab] Reporting Info on MeshLab Usage - V"+MeshLabApplication::appVer()));
 		// This preference values store when you did the last request for a mail
 		settings.setValue("congratsMeshCounter", congratsMeshCounter * 2);
 
@@ -1152,85 +1016,95 @@ void MainWindow::saveRecentProjectList(const QString &projName)
 
 void MainWindow::checkForUpdates(bool verboseFlag)
 {
-	VerboseCheckingFlag = verboseFlag;
+	verboseCheckingFlag = verboseFlag;
+
 	QSettings settings;
 	int totalKV = settings.value("totalKV", 0).toInt();
 	int loadedMeshCounter = settings.value("loadedMeshCounter", 0).toInt();
 	int savedMeshCounter = settings.value("savedMeshCounter", 0).toInt();
 	QString UID = settings.value("UID", QString("")).toString();
-	if (UID.isEmpty())
-	{
+	if (UID.isEmpty()) {
 		UID = QUuid::createUuid().toString();
 		settings.setValue("UID", UID);
 	}
-
 	QString BaseCommand("/~cignoni/meshlab_latest.php");
 
-#ifdef Q_OS_WIN
-	QString OS = "Win";
-#elif defined( Q_OS_OSX)
-	QString OS = "Mac";
-#else
-	QString OS = "Lin";
-#endif
+	#ifdef Q_OS_WIN
+		QString OS = "Win";
+	#elif defined( Q_OS_OSX)
+		QString OS = "Mac";
+	#else
+		QString OS = "Lin";
+	#endif
 	QString message = BaseCommand + QString("?code=%1&count=%2&scount=%3&totkv=%4&ver=%5&os=%6").arg(UID).arg(loadedMeshCounter).arg(savedMeshCounter).arg(totalKV).arg(MeshLabApplication::appVer()).arg(OS);
-	//idHost=httpReq->setHost(MeshLabApplication::organizationHost()); // id == 1
-	httpReq->get(QNetworkRequest(MeshLabApplication::organizationHost() + message));
-	//idGet=httpReq->get(message,&myLocalBuf);     // id == 2
+
+	QNetworkAccessManager stats;
+	QNetworkRequest statreq(MeshLabApplication::organizationHost() + message);
+	stats.get(statreq);
+
+	QNetworkRequest request(QString("http://www.meshlab.net/ML_VERSION"));
+	httpReq.get(request);
 }
 
 void MainWindow::connectionDone(QNetworkReply *reply)
 {
-    QString answer = reply->readAll();
+	QSettings settings;
+	QSettings::setDefaultFormat(QSettings::NativeFormat);
 
-    QSettings settings;
-    QSettings::setDefaultFormat(QSettings::NativeFormat);
+	bool dontRemindMeAboutUpgradeVal = false;
+	const QString dontRemindMeAboutUpgradeVar("dontRemindMeAboutUpgrade");
 
-    // Check if the user specified not to be reminded to upgrade
-    const QString dontRemindMeAboutUpgradeVar("dontRemindMeAboutUpgrade");
-    bool dontRemindMeAboutUpgradeVal = false;
-    if (settings.contains(dontRemindMeAboutUpgradeVar))
-        dontRemindMeAboutUpgradeVal = settings.value(dontRemindMeAboutUpgradeVar).toBool();
+	// Check if the user specified not to be reminded to upgrade
+	if (!verboseCheckingFlag) {
+		if (settings.contains(dontRemindMeAboutUpgradeVar))
+			dontRemindMeAboutUpgradeVal = settings.value(dontRemindMeAboutUpgradeVar).toBool();
+		if (dontRemindMeAboutUpgradeVal)
+			return;
+	}
 
-    // This block is for debugging. Uncomment the lines below
-    // to force the message box to appear.
-    // answer = QString("NEW You must upgrade.");
-    // dontRemindMeAboutUpgradeVal = false;
+	QByteArray ddata = reply->readAll();
+	QString onlineVersion = QString::fromStdString(ddata.toStdString());
+	QStringList splitOnlineVersion = onlineVersion.split(".");
 
-    if (dontRemindMeAboutUpgradeVal)
-        return;
 
-    // Set up a message box for the user
-    QMessageBox msgBox(this);
-    msgBox.setWindowTitle("MeshLab Version Checking");
-    msgBox.addButton(QMessageBox::Ok);
-    QCheckBox dontShowCheckBox("Don't show this message again.");
-    dontShowCheckBox.blockSignals(true);
-    msgBox.addButton(&dontShowCheckBox, QMessageBox::ResetRole);
+	QString thisVersion = MeshLabApplication::appVer();
+	QStringList splitThisVersion = thisVersion.split(".");
 
-    if (answer.left(3) == QString("NEW"))
-    {
-        msgBox.setText(answer.remove(0, 3));
-    }
-    else if (VerboseCheckingFlag)
-    {
-        if (answer.left(2) == QString("ok"))
-            msgBox.setText("Your MeshLab version is the most recent one.");
-        else
-            msgBox.setText("Warning. Update Checking server did not answer correctly: " + answer);
-    }
-    reply->deleteLater();
+	bool newVersionAvailable = false;
+	if (splitOnlineVersion.first().toInt() > splitThisVersion.first().toInt()){
+		newVersionAvailable = true;
+	}
+	else if (splitOnlineVersion.first().toInt() == splitThisVersion.first().toInt()){
+		if (splitOnlineVersion[1].toInt() > splitThisVersion[1].toInt()) {
+			newVersionAvailable = true;
+		}
+	}
 
-    // Showing the dialog only if there is a new version or if we are verbose
-    if (answer.left(3) == QString("NEW") || VerboseCheckingFlag)
-    {
-        int userReply = msgBox.exec();
-        if (userReply == QMessageBox::Ok && dontShowCheckBox.checkState() == Qt::Checked)
-            settings.setValue(dontRemindMeAboutUpgradeVar, true);
-    }
+	// Set up a message box for the user
+	QMessageBox msgBox(this);
+	msgBox.setWindowTitle("MeshLab Version Checking");
+	msgBox.addButton(QMessageBox::Ok);
+	QCheckBox dontShowCheckBox("Don't show this message again.");
+	dontShowCheckBox.blockSignals(true);
+	msgBox.addButton(&dontShowCheckBox, QMessageBox::ResetRole);
 
-    int loadedMeshCounter = settings.value("loadedMeshCounter", 0).toInt();
-    settings.setValue("lastComunicatedValue", loadedMeshCounter);
+	if (newVersionAvailable){
+		msgBox.setText(
+					"<center>You are using an old version of MeshLab.<br><br>"
+					"Please, upgrade to the new version!<br><br>"
+					"<big> <a href=\"https://github.com/cnr-isti-vclab/meshlab/releases\">Download</a></big></center>");
+	}
+	else if (verboseCheckingFlag && !newVersionAvailable) {
+		msgBox.setText("<center>Your MeshLab version is the most recent one.</center>");
+	}
+	reply->deleteLater();
+
+	// Showing the dialog only if there is a new version or if we are verbose
+	if (newVersionAvailable || verboseCheckingFlag) {
+		int userReply = msgBox.exec();
+		if (userReply == QMessageBox::Ok && dontShowCheckBox.checkState() == Qt::Checked)
+			settings.setValue(dontRemindMeAboutUpgradeVar, true);
+	}
 }
 
 
