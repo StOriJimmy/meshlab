@@ -39,9 +39,8 @@ if(TARGET external-levmar)
                                PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(filter_isoparametrization PUBLIC common)
 
-    target_link_libraries(filter_isoparametrization PRIVATE external-newuoa
-                                                            external-levmar)
-
+    target_link_libraries(filter_isoparametrization PRIVATE external-levmar)
+															#external-newuoa
     if(OpenMP_CXX_FOUND)
         target_link_libraries(filter_isoparametrization
                               PRIVATE OpenMP::OpenMP_CXX)
