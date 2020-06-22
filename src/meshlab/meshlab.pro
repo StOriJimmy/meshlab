@@ -1,10 +1,10 @@
 include (../general.pri)
 
+QT += gui
 QT += opengl
 QT += xml
 QT += xmlpatterns
 QT += network
-QT += script
 
 #CONFIG += debug_and_release
 DESTDIR = $$MESHLAB_DISTRIB_DIRECTORY
@@ -42,17 +42,14 @@ HEADERS += \
     layerDialog.h \
     stdpardialog.h \
     ml_std_par_dialog.h \
-    xmlstdpardialog.h \
     additionalgui.h \
-    xmlgeneratorgui.h \
     snapshotsetting.h \
     ml_render_gui.h \
     ml_rendering_actions.h \
     ml_default_decorators.h \
     $$VCGDIR/wrap/gui/trackball.h \
     $$VCGDIR/wrap/gui/trackmode.h \
-    $$VCGDIR/wrap/gl/trimesh.h \
-    filterthread.h
+    $$VCGDIR/wrap/gl/trimesh.h
 
 SOURCES += \
     main.cpp \
@@ -69,18 +66,14 @@ SOURCES += \
     changetexturename.cpp \
     stdpardialog.cpp \
     ml_std_par_dialog.cpp \
-    xmlstdpardialog.cpp \
     additionalgui.cpp \
-    xmlgeneratorgui.cpp \
     ml_render_gui.cpp \
     ml_rendering_actions.cpp \
     ml_default_decorators.cpp \
     $$VCGDIR/wrap/gui/trackball.cpp \
     $$VCGDIR/wrap/gui/trackmode.cpp \
     $$VCGDIR/wrap/gui/coordinateframe.cpp \
-    glarea_setting.cpp \
-    filterthread.cpp
-
+    glarea_setting.cpp
 FORMS += \
     ui/layerDialog.ui \
     ui/filterScriptDialog.ui \
@@ -90,8 +83,7 @@ FORMS += \
     ui/renametexture.ui \
     ui/savemaskexporter.ui \
     ui/congratsDialog.ui \
-    ui/filtergui.ui \
-    ui/filtercreatortab.ui
+    ui/filtergui.ui
 	
 RESOURCES += \
     meshlab.qrc
@@ -113,28 +105,23 @@ ICON = images/meshlab.icns
 # You have to copy the file by hand into the meshlab.app/Contents/Resources directory.
 # ICON += images/meshlab_obj.icns
 
-
-# the following line is needed to avoid mismatch between
-# the awful min/max macros of windows and the limits max
-win32:DEFINES += NOMINMAX
-
 CONFIG += stl
 
 win32-msvc:LIBS += \
     -L$$MESHLAB_DISTRIB_DIRECTORY/lib/win32-msvc -ljhead \
-    -L$$MESHLAB_DISTRIB_DIRECTORY/lib -lcommon -lopengl32 -lGLU32
+    -L$$MESHLAB_DISTRIB_DIRECTORY/lib -lmeshlab-common -lopengl32 -lGLU32
 
 win32-g++:LIBS += \
     -L$$MESHLAB_DISTRIB_DIRECTORY/lib/win32-gcc -ljhead \
-    -L$$MESHLAB_DISTRIB_DIRECTORY/lib -lcommon -lopengl32 -lGLU32
+    -L$$MESHLAB_DISTRIB_DIRECTORY/lib -lmeshlab-common -lopengl32 -lGLU32
 
 macx:LIBS += \
     -L$$MESHLAB_DISTRIB_DIRECTORY/lib/macx64 -ljhead \
-    $$MESHLAB_DISTRIB_DIRECTORY/lib/libcommon.dylib
+    $$MESHLAB_DISTRIB_DIRECTORY/lib/libmeshlab-common.dylib
 
 macx:QMAKE_POST_LINK += "\
-    cp -P $$MESHLAB_DISTRIB_DIRECTORY/lib/libcommon.1.dylib $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/MacOS; \
-    install_name_tool -change libcommon.1.dylib @executable_path/libcommon.1.dylib $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/MacOS/meshlab \
+    cp -P $$MESHLAB_DISTRIB_DIRECTORY/lib/libmeshlab-common.1.dylib $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/Frameworks; \
+    install_name_tool -change libmeshlab-common.1.dylib @rpath/libmeshlab-common.1.dylib $$MESHLAB_DISTRIB_DIRECTORY/meshlab.app/Contents/MacOS/meshlab \
     "
 
 #CONFIG(release,debug | release) {
@@ -144,7 +131,7 @@ macx:QMAKE_POST_LINK += "\
 #}
 
 linux:LIBS += \
-    -lcommon -lGLU \
+    -lmeshlab-common -lGLU \
     -L$$MESHLAB_DISTRIB_DIRECTORY/lib/linux -ljhead
 
 !CONFIG(system_glew) {

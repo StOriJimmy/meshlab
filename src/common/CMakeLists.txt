@@ -1,9 +1,17 @@
-# Copyright 2019 Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-### Generated file! Edit the templates in src/templates then re-run ./make-cmake.py
+### Generated file! Edit the templates in src/templates,
+### specifically src/templates/common.cmake (custom for this directory),
+### then re-run ./make-cmake.py
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../ML_VERSION")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../../ML_VERSION" MESHLAB_VERSION)
+    add_definitions(-DMESHLAB_VERSION=${MESHLAB_VERSION})
+endif()
 
 set(SOURCES
+    GLExtensionsManager.cpp
     GLLogStream.cpp
     filterparameter.cpp
     filterscript.cpp
@@ -16,14 +24,11 @@ set(SOURCES
     ml_thread_safe_memory_info.cpp
     mlapplication.cpp
     pluginmanager.cpp
-    scriptinterface.cpp
-    scriptsyntax.cpp
-    searcher.cpp
-    xmlfilterinfo.cpp)
+    searcher.cpp)
 
 set(HEADERS
+    GLExtensionsManager.h
     GLLogStream.h
-    compile_time_version.h
     filterparameter.h
     filterscript.h
     interfaces.h
@@ -37,10 +42,7 @@ set(HEADERS
     mlapplication.h
     mlexception.h
     pluginmanager.h
-    scriptinterface.h
-    scriptsyntax.h
-    searcher.h
-    xmlfilterinfo.h)
+    searcher.h)
 
 set(RESOURCES common.qrc)
 
@@ -55,7 +57,6 @@ target_link_libraries(
     common
     PUBLIC Qt5::Core
            Qt5::OpenGL
-           Qt5::Script
            Qt5::Widgets
            Qt5::Xml
            Qt5::XmlPatterns
@@ -65,5 +66,5 @@ target_link_libraries(
 set_property(TARGET common PROPERTY FOLDER Core)
 
 if(NOT WIN32)
-    install(TARGETS common DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(TARGETS common DESTINATION ${MESHLAB_LIB_INSTALL_DIR})
 endif()

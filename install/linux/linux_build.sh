@@ -9,15 +9,15 @@
 # You can give as argument the BUILD_PATH, and meshlab binaries will be
 # then placed inside BUILD_PATH/distrib.
 
-cd "${0%/*}" #move to script directory
-
 #checking for parameters
 if [ "$#" -eq 0 ]
 then
     BUILD_PATH="../../src"
 else
-    BUILD_PATH=$1
+    BUILD_PATH=$(realpath $1)
 fi
+
+cd "$(dirname "$(realpath "$0")")"; #move to script directory
 
 if ! [ -d $BUILD_PATH ]
 then
@@ -28,5 +28,5 @@ echo "Build path is: " $BUILD_PATH
 SOURCE_PATH=$PWD/../../src
 
 cd $BUILD_PATH
-qmake $SOURCE_PATH/meshlab.pro "CONFIG+= system_eigen3 system_glew system_bzip2 system_openctm system_lib3ds"
+qmake $SOURCE_PATH/meshlab.pro
 make -j4

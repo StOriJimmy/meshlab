@@ -24,6 +24,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include <common/GLExtensionsManager.h>
 #include "meshrender.h"
 #include <QGLWidget>
 #include <QTextStream>
@@ -248,7 +249,7 @@ void MeshShaderRenderPlugin::initActionList() {
 	}
 }
 
-void MeshShaderRenderPlugin::Init(QAction *a, MeshDocument &md, MLSceneGLSharedDataContext::PerMeshRenderingDataMap& mp, GLArea *gla)
+void MeshShaderRenderPlugin::Init(QAction *a, MeshDocument &/*md*/, MLSceneGLSharedDataContext::PerMeshRenderingDataMap& /*mp*/, GLArea *gla)
 {
 	if (sDialog) {
 		sDialog->close();
@@ -257,8 +258,7 @@ void MeshShaderRenderPlugin::Init(QAction *a, MeshDocument &md, MLSceneGLSharedD
 	}
 
 	gla->makeCurrent();
-	GLenum err = glewInit();
-	if (GLEW_OK == err) {
+	if (GLExtensionsManager::initializeGLextensions_notThrowing()) {
 		if (GLEW_ARB_vertex_program && GLEW_ARB_fragment_program) {
 			supported = true;
 			if (shaders.find(a->text()) != shaders.end()) {
@@ -404,7 +404,7 @@ void MeshShaderRenderPlugin::Init(QAction *a, MeshDocument &md, MLSceneGLSharedD
 }
 
 
-void MeshShaderRenderPlugin::Render(QAction *a, MeshDocument &md, MLSceneGLSharedDataContext::PerMeshRenderingDataMap& mp, GLArea *gla)
+void MeshShaderRenderPlugin::Render(QAction *a, MeshDocument &md, MLSceneGLSharedDataContext::PerMeshRenderingDataMap& /*mp*/, GLArea *gla)
 {
 	//  MeshModel &mm
 	if (shaders.find(a->text()) != shaders.end()) {
@@ -483,7 +483,7 @@ void MeshShaderRenderPlugin::Render(QAction *a, MeshDocument &md, MLSceneGLShare
 	if ((gla != NULL) && (gla->mvc() != NULL))
 	{
 		MLSceneGLSharedDataContext* shared = gla->mvc()->sharedDataContext();
-		foreach(MeshModel * mp, md.meshList)
+		for(MeshModel * mp : md.meshList)
 		{
 			if ((mp != NULL) && (gla->meshVisibilityMap[mp->id()]))
 				shared->draw(mp->id(),gla->context());

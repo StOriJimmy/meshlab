@@ -434,12 +434,12 @@ bool FilterTexturePlugin::applyFilter(QAction *filter, MeshDocument &md, RichPar
             int sideDim = par.getInt("sidedim");
             int textDim = par.getInt("textdim");
             int pxBorder = par.getInt("border");
-            bool adv;
+            bool adv = false;
             switch(par.getEnum("method")) {
-            case 0 : adv = false; break; // Basic
-            case 1 : adv = true; break;  // Advanced
-            default : assert(0);
-        };
+                case 0 : adv = false; break; // Basic
+                case 1 : adv = true; break;  // Advanced
+                default : assert(0);
+            };
 
             // Pre checks
             CheckError(textDim <= 0, "Texture Dimension has an incorrect value");
@@ -849,20 +849,21 @@ bool FilterTexturePlugin::applyFilter(QAction *filter, MeshDocument &md, RichPar
 		assert (srcMesh != NULL);
 		assert (trgMesh != NULL);
 		CheckError(!QFile(trgMesh->fullName()).exists(), "Save the target mesh before creating a texture");
-		CheckError(srcMesh->cm.fn == 0 || trgMesh->cm.fn == 0, "Both meshes require to have faces");
-		CheckError(!trgMesh->hasDataMask(MeshModel::MM_WEDGTEXCOORD), "Target mesh doesn't have Per Wedge Texture Coordinates");
+        CheckError(trgMesh->cm.fn == 0, "Target mesh needs to have faces");
+        CheckError(!trgMesh->hasDataMask(MeshModel::MM_WEDGTEXCOORD), "Target mesh does not have Per-Wedge Texture Coordinates");
 		CheckError(textW <= 0, "Texture Width has an incorrect value");
 		CheckError(textH <= 0, "Texture Height has an incorrect value");
 
 		if (vertexSampling) {
-			if (vertexMode == 0) { CheckError(!srcMesh->hasDataMask(MeshModel::MM_VERTCOLOR), "Source mesh doesn't have Per Vertex Color"); }
-			if (vertexMode == 1) { CheckError(!srcMesh->hasDataMask(MeshModel::MM_VERTNORMAL), "Source mesh doesn't have Per Vertex Normal"); }
-			if (vertexMode == 2) { CheckError(!srcMesh->hasDataMask(MeshModel::MM_VERTQUALITY), "Source mesh doesn't have Per Vertex Quality"); }
+            if (vertexMode == 0) { CheckError(!srcMesh->hasDataMask(MeshModel::MM_VERTCOLOR), "Source mesh doesn't have Per-Vertex Color"); }
+            if (vertexMode == 1) { CheckError(!srcMesh->hasDataMask(MeshModel::MM_VERTNORMAL), "Source mesh doesn't have Per-Vertex Normal"); }
+            if (vertexMode == 2) { CheckError(!srcMesh->hasDataMask(MeshModel::MM_VERTQUALITY), "Source mesh doesn't have Per-Vertex Quality"); }
 		}
 		else
 		{
-			CheckError(!srcMesh->hasDataMask(MeshModel::MM_WEDGTEXCOORD), "Source mesh doesn't have Per Wedge Texture Coordinates");
-			CheckError(srcMesh->cm.textures.empty(), "Source mesh doesn't have any associated texture");
+            CheckError(srcMesh->cm.fn == 0, "Source mesh needs to have faces");
+            CheckError(!srcMesh->hasDataMask(MeshModel::MM_WEDGTEXCOORD), "Source mesh does not have Per-Wedge Texture Coordinates");
+            CheckError(srcMesh->cm.textures.empty(), "Source mesh does not have any associated texture");
 		}
 
 		if (overwrite)
@@ -1056,7 +1057,7 @@ bool FilterTexturePlugin::applyFilter(QAction *filter, MeshDocument &md, RichPar
 		srcImgs.resize(srcMesh->cm.textures.size());
 		QString path;
 
-		for (int textInd = 0; textInd < srcMesh->cm.textures.size(); textInd++)
+		for (size_t textInd = 0; textInd < srcMesh->cm.textures.size(); textInd++)
 		{
 			path = m.fullName();
 			path = path.left(std::max<int>(path.lastIndexOf('\\'), path.lastIndexOf('/')) + 1).append(srcMesh->cm.textures[textInd].c_str());

@@ -20,7 +20,8 @@
 * for more details.                                                         *
 *                                                                           *
 ****************************************************************************/
-#include <GL/glew.h>
+
+#include <common/GLExtensionsManager.h>
 
 #include <QObject>
 #include <QGLContext>
@@ -57,10 +58,9 @@ RenderHelper::~RenderHelper()
 
 int RenderHelper::initializeGL(vcg::CallBackPos *cb)
 {
-  GLenum err = glewInit();
   if(cb) cb( 0, "GL Initialization");
 
-  if (GLEW_OK != err)
+  if (!GLExtensionsManager::initializeGLextensions_notThrowing())
   {
     //Log(0, "GLEW initialization error!");
     return -1;

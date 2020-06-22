@@ -71,7 +71,7 @@ else()
 endif()
 
 # newuoa - optional and header-only, for several plugins including all that use levmar
-set(NEWUOA_DIR ${EXTERNAL_DIR}/newuoa)
+set(NEWUOA_DIR ${VCGDIR}/wrap/newuoa)
 if(ALLOW_BUNDLED_NEWUOA AND EXISTS "${NEWUOA_DIR}/include/newuoa.h")
     message(STATUS "- newuoa - using bundled source")
     add_library(external-newuoa INTERFACE)
@@ -317,7 +317,7 @@ if(ALLOW_BUNDLED_SSYNTH AND EXISTS "${LEVMAR_DIR}/lm.h")
     # "${SSYNTH_DIR}/ssynth/SyntopiaCore/GLEngine/Sphere.cpp"
     # "${SSYNTH_DIR}/ssynth/StructureSynth/Model/Rendering/OpenGLRenderer.cpp"
     target_include_directories(external-ssynth SYSTEM PUBLIC "${SSYNTH_DIR}/ssynth")
-    target_link_libraries(external-ssynth PRIVATE Qt5::Core Qt5::Xml Qt5::OpenGL Qt5::Script OpenGL::GLU)
+    target_link_libraries(external-ssynth PRIVATE Qt5::Core Qt5::Xml Qt5::OpenGL OpenGL::GLU)
     set_property(TARGET external-ssynth PROPERTY FOLDER External)
 endif()
 
@@ -354,5 +354,24 @@ elseif(ALLOW_BUNDLED_QHULL AND EXISTS "${QHULL_DIR}/src/qhull.h")
         "${QHULL_DIR}/src/geom.h"
         "${QHULL_DIR}/src/user.c"
         "${QHULL_DIR}/src/user.h")
+    target_include_directories(external-qhull INTERFACE "${QHULL_DIR}/src")
     set_property(TARGET external-qhull PROPERTY FOLDER External)
 endif()
+
+# u3d - optional, for io_u3d
+set(U3D_DIR ${EXTERNAL_DIR}/u3d)
+if(ALLOW_BUNDLED_U3D)
+    message(STATUS "- u3d - using bundled source")
+    
+	include("${U3D_DIR}/src/u3d.cmake")
+	set_property(TARGET external-IDTFConverter PROPERTY FOLDER External)
+
+    # These sources were disabled in the .pro file: "${SSYNTH_DIR}/ssynth/SyntopiaCore/GLEngine/EngineWidget.cpp"
+    # "${SSYNTH_DIR}/ssynth/SyntopiaCore/GLEngine/Raytracer/RayTracer.cpp"
+    # "${SSYNTH_DIR}/ssynth/SyntopiaCore/GLEngine/Sphere.cpp"
+    # "${SSYNTH_DIR}/ssynth/StructureSynth/Model/Rendering/OpenGLRenderer.cpp"
+
+	#target_include_directories(external-IDTFConverter SYSTEM PUBLIC "${U3D_DIR}/IDTF")
+	#set_property(TARGET external-IDTFConverter PROPERTY FOLDER External)
+endif()
+

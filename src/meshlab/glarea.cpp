@@ -24,6 +24,7 @@
 
 
 #include <common/interfaces.h>
+#include <common/GLExtensionsManager.h>
 
 #include "glarea.h"
 #include "mainwindow.h"
@@ -33,6 +34,7 @@
 #include <QFileDialog>
 #include <QClipboard>
 #include <QLocale>
+#include <QPainterPath>
 
 #include <wrap/gl/picking.h>
 #include <wrap/qt/trackball.h>
@@ -173,10 +175,7 @@ void GLArea::initializeGL()
 
     trackball_light.center=Point3f(0, 0, 0);
     trackball_light.radius= 1;
-    GLenum err = glewInit();
-    if (err != GLEW_OK ) {
-        assert(0);
-    }
+    GLExtensionsManager::initializeGLextensions();
 	//doneCurrent();
 }
 
@@ -432,7 +431,7 @@ void GLArea::paintEvent(QPaintEvent* /*event*/)
     if(!isValid())
         return;
 
-    QTime time;
+    QElapsedTimer time;
     time.start();
 
     /*if(!this->md()->isBusy())
@@ -441,9 +440,9 @@ void GLArea::paintEvent(QPaintEvent* /*event*/)
         hasToUpdateTexture=false;
     }*/
 
-    glClearColor(1.0,1.0,1.0,0.0);
+    ::glClearColor(1.0,1.0,1.0,0.0);
     if (takeSnapTile && (ss.background == 3))
-        glClearColor(0.0, 0.0, 0.0, 0.0);
+        ::glClearColor(0.0, 0.0, 0.0, 0.0);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -646,7 +645,7 @@ void GLArea::paintEvent(QPaintEvent* /*event*/)
 
     QString error = checkGLError::makeString("There are gl errors: ");
     if(!error.isEmpty()) {
-        Logf(GLLogStream::WARNING, qUtf8Printable(error));
+        Log(GLLogStream::WARNING, qUtf8Printable(error));
     }
     //check if viewers are linked
     MainWindow *window = qobject_cast<MainWindow *>(QApplication::activeWindow());
@@ -1406,6 +1405,16 @@ void GLArea::updateDecorator(QString name, bool toggle, bool stateToSet)
 {
 	makeCurrent();
     MeshDecorateInterface *iDecorateTemp = this->mw()->PM.getDecoratorInterfaceByName(name);
+    if (!iDecorateTemp) {
+        this->Logf(GLLogStream::SYSTEM,"Could not get Decorate interface %s", qUtf8Printable(name));
+        this->Log(GLLogStream::SYSTEM,"Known decorate interfaces:");
+        for (auto tt : this->mw()->PM.meshDecoratePlugins()) {
+            for (auto action : tt->actions()) {
+                this->Logf(GLLogStream::SYSTEM,"- %s", qUtf8Printable(tt->decorationName(action)));
+            }
+        }
+        return;
+    }
     QAction *action = iDecorateTemp->action(name);
 
     if(iDecorateTemp->getDecorationClass(action)== MeshDecorateInterface::PerDocument)

@@ -36,6 +36,7 @@ $Log: stdpardialog.cpp,v $
 #include "mainwindow.h"
 #include "ui_layerDialog.h"
 #include "layerDialog.h"
+#include "../common/mlexception.h"
 
 using namespace std;
 
@@ -492,6 +493,7 @@ void LayerDialog::rasterItemClicked (QTreeWidgetItem * item , int col)
                     mw->GLA()->updateRasterSetVisibilities( );
                     updatePerRasterItemVisibility();
                 }
+                // fall through
             case 1 :
             case 2 :
             case 3 :
@@ -894,7 +896,7 @@ void LayerDialog::updateDecoratorParsView()
         MeshDecorateInterface* decPlug =  qobject_cast<MeshDecorateInterface *>(decList[ii]->parent());
         if (!decPlug)
         {
-            mw->GLA()->Logf(GLLogStream::SYSTEM,"MeshLab System Error: A Decorator Plugin has been expected.");
+            mw->GLA()->Log(GLLogStream::SYSTEM,"MeshLab System Error: A Decorator Plugin has been expected.");
             return;
         }
         else
@@ -1225,7 +1227,7 @@ DecoratorParamsTreeWidget::DecoratorParamsTreeWidget(QAction* act,MainWindow *mw
 {
     MeshDecorateInterface* decPlug =  qobject_cast<MeshDecorateInterface *>(act->parent());
     if (!decPlug)
-        mw->GLA()->Logf(GLLogStream::SYSTEM,"MeshLab System Error: A Decorator Plugin has been expected.");
+        mw->GLA()->Log(GLLogStream::SYSTEM, "MeshLab System Error: A Decorator Plugin has been expected.");
     else
     {
         decPlug->initGlobalParameterSet(act,tmpSet);
