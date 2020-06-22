@@ -46,6 +46,8 @@ if(TARGET external-newuoa AND TARGET external-levmar)
         target_compile_definitions(filter_isoparametrization PRIVATE _USE_OMP)
     endif()
 
+	set_target_properties( filter_isoparametrization PROPERTIES COMPILE_FLAGS "/bigobj" )
+	
     set_property(TARGET filter_isoparametrization PROPERTY FOLDER Plugins)
 
     set_property(TARGET filter_isoparametrization

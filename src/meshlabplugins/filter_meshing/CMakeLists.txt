@@ -22,5 +22,7 @@ set_property(TARGET filter_meshing PROPERTY RUNTIME_OUTPUT_DIRECTORY
 set_property(TARGET filter_meshing PROPERTY LIBRARY_OUTPUT_DIRECTORY
                                             ${MESHLAB_PLUGIN_OUTPUT_DIR})
 
+set_target_properties( filter_meshing PROPERTIES COMPILE_FLAGS "/bigobj" )
+
 install(TARGETS filter_meshing DESTINATION ${MESHLAB_PLUGIN_INSTALL_DIR}
                 COMPONENT Plugins)
