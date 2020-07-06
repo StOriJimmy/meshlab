@@ -139,7 +139,7 @@ public:
     CMeshO cm;
 
 
-
+	vcg::Point3d global_shift; // XYLIU
 
     /*vcg::GlTrimesh<CMeshO> glw;*/
     

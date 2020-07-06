@@ -203,7 +203,10 @@ void SampleEditPlugin::drawFace(CMeshO::FacePointer fp, MeshModel &m, GLArea * /
 	for (int i = 0; i<3; ++i)
     {
 		QString buf;
-		buf =QString("fv%1:v#%2 - pos[%3 %4 %5]").arg(QString::number(i)).arg(QString::number(fp->V(i) - &m.cm.vert[0])).arg(QString::number(fp->P(i)[0])).arg(QString::number(fp->P(i)[1])).arg(QString::number(fp->P(i)[2]));
+		buf = QString("fv%1:v#%2 - pos[%3 %4 %5]").arg(QString::number(i)).arg(QString::number(fp->V(i) - &m.cm.vert[0])).
+			arg(QString::number(fp->P(i)[0] + m.global_shift.X(), 'f', 6)).
+			arg(QString::number(fp->P(i)[1] + m.global_shift.Y(), 'f', 6)).
+			arg(QString::number(fp->P(i)[2] + m.global_shift.Z(), 'f', 6));
 		if( m.hasDataMask(MeshModel::MM_VERTQUALITY) )
 			buf +=QString(" - Q(%1)").arg(QString::number(fp->V(i)->Q()));
 		if (m.hasDataMask(MeshModel::MM_VERTCOLOR))
@@ -220,7 +223,11 @@ void SampleEditPlugin::drawFace(CMeshO::FacePointer fp, MeshModel &m, GLArea * /
 void SampleEditPlugin::drawVert(CMeshO::VertexPointer vp, MeshModel &m, GLArea * /*gla*/, QPainter *p)
 {
 	QString buf;
-	buf = QString("v#%1 - pos[%2 %3 %4]").arg(QString::number(vp - &m.cm.vert[0])).arg(QString::number(vp->P()[0])).arg(QString::number(vp->P()[1])).arg(QString::number(vp->P()[2]));
+	buf = QString("v#%1 - pos[%2 %3 %4]").
+		arg(QString::number(vp - &m.cm.vert[0])).
+		arg(QString::number(vp->P()[0] + m.global_shift.X(), 'f', 6)).
+		arg(QString::number(vp->P()[1] + m.global_shift.Y(), 'f', 6)).
+		arg(QString::number(vp->P()[2] + m.global_shift.Z(), 'f', 6));
 	if (m.hasDataMask(MeshModel::MM_VERTQUALITY))
 		buf += QString(" - Q(%1)").arg(QString::number(vp->Q()));
 	if (m.hasDataMask(MeshModel::MM_VERTCOLOR))
@@ -269,7 +276,10 @@ void SampleEditPlugin::keyReleaseEvent(QKeyEvent *e, MeshModel &m, GLArea *gla)
 			for (int i = 0; i < 3; ++i)
 			{
 				this->Log(GLLogStream::FILTER, "face vert %i : vert# %i", i, tri::Index(m.cm, curFacePtr->V(i)));
-				this->Log(GLLogStream::FILTER, "position [%f %f %f]", curFacePtr->V(i)->P()[0], curFacePtr->V(i)->P()[1], curFacePtr->V(i)->P()[2]);
+				this->Log(GLLogStream::FILTER, "position [%f %f %f]", 
+					curFacePtr->V(i)->P()[0] + m.global_shift.X(), 
+					curFacePtr->V(i)->P()[1] + m.global_shift.Y(),
+					curFacePtr->V(i)->P()[2] + m.global_shift.Z());
 				this->Log(GLLogStream::FILTER, "normal [%f %f %f]", curFacePtr->V(i)->N()[0], curFacePtr->V(i)->N()[1], curFacePtr->V(i)->N()[2]);
 				if (m.hasDataMask(MeshModel::MM_VERTQUALITY))
 					this->Log(GLLogStream::FILTER, "quality %f", curFacePtr->V(i)->Q());
@@ -286,7 +296,10 @@ void SampleEditPlugin::keyReleaseEvent(QKeyEvent *e, MeshModel &m, GLArea *gla)
 		{
 			this->Log(GLLogStream::FILTER, "------");
 			this->Log(GLLogStream::FILTER, "vertex# %i", tri::Index(m.cm, curVertPtr));
-			this->Log(GLLogStream::FILTER, "position [%f %f %f]", curVertPtr->P()[0], curVertPtr->P()[1], curVertPtr->P()[2]);
+			this->Log(GLLogStream::FILTER, "position [%f %f %f]", 
+				curVertPtr->P()[0] + m.global_shift.X(), 
+				curVertPtr->P()[1] + m.global_shift.Y(), 
+				curVertPtr->P()[2] + m.global_shift.Z());
 			this->Log(GLLogStream::FILTER, "normal [%f %f %f]", curVertPtr->N()[0], curVertPtr->N()[1], curVertPtr->N()[2]);
 			if (m.hasDataMask(MeshModel::MM_VERTQUALITY))
 				this->Log(GLLogStream::FILTER, "quality %f", curVertPtr->Q());

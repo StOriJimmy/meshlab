@@ -174,13 +174,35 @@ MeshModel * MeshDocument::addNewMesh(QString fullPath, QString label, bool setAs
 {
     QString newlabel = NameDisambiguator(this->meshList,std::move(label));
 
+	vcg::Point3d global_shift(0.f, 0.f, 0.f);
     if(!fullPath.isEmpty())
     {
         QFileInfo fi(fullPath);
         fullPath = fi.absoluteFilePath();
+
+		QString offset_path = fi.absolutePath() + "/" + fi.completeBaseName() + ".offset";
+		if (fi.exists()) {
+			FILE* fp = fopen(offset_path.toLocal8Bit().data(), "r");
+			if (fp) {
+				char strtemp[256];
+				fscanf(fp, "%s", strtemp);
+				QString line = QString::fromLocal8Bit(strtemp);
+				QStringList coords = line.simplified().split(QChar(';'), QString::SkipEmptyParts);
+				if (coords.size() == 3)	{
+					global_shift.X() = coords[0].toDouble();
+					global_shift.Y() = coords[1].toDouble();
+					global_shift.Z() = coords[2].toDouble();
+				}
+
+				fclose(fp);
+			}
+		}
     }
 
     MeshModel *newMesh = new MeshModel(this,fullPath,newlabel);
+	if (newMesh) {
+		newMesh->global_shift = global_shift;
+	}
     meshList.push_back(newMesh);
     
 	if(setAsCurrent)
@@ -386,6 +408,8 @@ MeshModel::MeshModel(MeshModel* cp)
 	visible = cp->visible;
 	updateDataMask(cp->currentDataMask);
 	vcg::tri::Append<CMeshO, CMeshO>::MeshCopy(cm, cp->cm);
+
+	global_shift = cp->global_shift; // XYLIU
 }
 
 QString MeshModel::relativePathName() const
