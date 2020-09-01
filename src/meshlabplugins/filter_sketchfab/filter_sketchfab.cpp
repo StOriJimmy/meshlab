@@ -95,24 +95,34 @@ int FilterSketchFabPlugin::postCondition(QAction*) const
 	return MeshModel::MM_NONE;
 }
 
-void FilterSketchFabPlugin::initParameterSet(QAction* action, MeshModel&, RichParameterSet& parlst)
+void FilterSketchFabPlugin::initParameterSet(QAction* action, MeshModel&, RichParameterList& parlst)
 {
+	QSettings settings;
+	QVariant v = settings.value("SketchFab Code");
+	QString sketchFabAPIValue;
+	if (v == QVariant()) {
+		sketchFabAPIValue = DEFAULT_API;
+	}
+	else {
+		sketchFabAPIValue = v.toString();
+	}
 	switch(ID(action)) {
 	case FP_SKETCHFAB :
-		parlst.addParam(new RichString("sketchFabKeyCode", "00000000", "Sketch Fab Code", "Mandatory."));
-		parlst.addParam(new RichString("title", "MeshLabModel", "Title", "Mandatory."));
-		parlst.addParam(new RichString("description", "A model generated with meshlab", "Description", "Mandatory. A short description of the model that is uploaded."));
-		parlst.addParam(new RichString("tags", "meshlab", "Tags", "Mandatory. Tags must be separated by a space. Typical tags usually used by MeshLab users: scan, photogrammetry."));
-		parlst.addParam(new RichBool("isPrivate", false, "Private", "This parameter can be true only for PRO account."));
-		parlst.addParam(new RichBool("isPublished", false, "Publish", "If true the model will be published immediately."));
-		parlst.addParam(new RichBool("autoRotate", true, "Auto Rotate", "If true the model rotated by 90 degree on the X axis to maintain similar default orientation."));
+		parlst.addParam(RichString("sketchFabKeyCode", sketchFabAPIValue, "Sketch Fab Code", "Mandatory."));
+		parlst.addParam(RichString("title", "MeshLabModel", "Title", "Mandatory."));
+		parlst.addParam(RichString("description", "A model generated with meshlab", "Description", "Mandatory. A short description of the model that is uploaded."));
+		parlst.addParam(RichString("tags", "meshlab", "Tags", "Mandatory. Tags must be separated by a space. Typical tags usually used by MeshLab users: scan, photogrammetry."));
+		parlst.addParam(RichBool("isPrivate", false, "Private", "This parameter can be true only for PRO account."));
+		parlst.addParam(RichBool("isPublished", false, "Publish", "If true the model will be published immediately."));
+		parlst.addParam(RichBool("autoRotate", true, "Auto Rotate", "If true the model rotated by 90 degree on the X axis to maintain similar default orientation."));
+		parlst.addParam(RichBool("saveApiSetting", sketchFabAPIValue != DEFAULT_API, "Save SketchFab Code", "Saves the API SketchFab code into the MeshLab settings, allowing to load it as default value every time you run this filter."));
 		break;
 	default :
 		assert(0);
 	}
 }
 
-bool FilterSketchFabPlugin::applyFilter(QAction * action, MeshDocument& md, RichParameterSet& par, vcg::CallBackPos* cb)
+bool FilterSketchFabPlugin::applyFilter(QAction * action, MeshDocument& md, const RichParameterList& par, vcg::CallBackPos* cb)
 {
 	switch (ID(action)) {
 	case FP_SKETCHFAB:
@@ -120,7 +130,7 @@ bool FilterSketchFabPlugin::applyFilter(QAction * action, MeshDocument& md, Rich
 						 par.getString("sketchFabKeyCode"), par.getString("title"),
 						 par.getString("description"), par.getString("tags"),
 						 par.getBool("isPrivate"), par.getBool("isPublished"),
-						 par.getBool("autoRotate"));
+						 par.getBool("autoRotate"), par.getBool("saveApiSetting"));
 	default:
 		assert(0);
 		return false;
@@ -136,7 +146,8 @@ bool FilterSketchFabPlugin::sketchfab(
 		const QString& tags,
 		bool isPrivate,
 		bool isPublished,
-		bool /*autoRotate*/)
+		bool /*autoRotate*/,
+		bool saveApiSetting)
 {
 	qDebug("Export to SketchFab start ");
 	this->fcb=cb;
@@ -145,9 +156,17 @@ bool FilterSketchFabPlugin::sketchfab(
 	Matrix44m rot; rot.SetRotateDeg(-90,Point3m(1,0,0));
 	Matrix44m rotI; rot.SetRotateDeg(90,Point3m(1,0,0));
 
-	if(apiToken.isEmpty() || apiToken=="0000000") {
+	if(apiToken.isEmpty() || apiToken == DEFAULT_API) {
 		this->errorMessage = QString("Please set in the MeshLab preferences your private API Token string that you can find on the<a href=\"https://sketchfab.com/settings/password\">Sketchfab Password Settings.");
 		return false;
+	}
+
+	QSettings settings;
+	if (saveApiSetting) {
+		settings.setValue("SketchFab Code", apiToken);
+	}
+	else {
+		settings.remove("SketchFab Code");
 	}
 
 	QString tmpObjFileName = QDir::tempPath() + "/xxxx.ply";

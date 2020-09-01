@@ -54,6 +54,11 @@ FilterCreateIso::~FilterCreateIso() {
         delete actionList.at(i);
 }
 
+QString FilterCreateIso::pluginName() const
+{
+    return "FilterCreateIso";
+}
+
  QString FilterCreateIso::filterName(FilterIDType filter) const
 {
     switch(filter)
@@ -93,7 +98,7 @@ FilterCreateIso::~FilterCreateIso() {
   return 0;
 }
 
- bool FilterCreateIso::applyFilter(QAction *filter, MeshDocument &md, RichParameterSet & par, vcg::CallBackPos * cb)
+ bool FilterCreateIso::applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & par, vcg::CallBackPos * cb)
  {
    md.addNewMesh("",this->filterName(ID(filter)));
    MeshModel &m=*(md.mm());
@@ -121,13 +126,13 @@ FilterCreateIso::~FilterCreateIso() {
    }
    return true;
  }
- void FilterCreateIso::initParameterSet(QAction *action,MeshModel & /*m*/, RichParameterSet & parlst)
+ void FilterCreateIso::initParameterSet(QAction *action,MeshModel & /*m*/, RichParameterList & parlst)
 {
     pair<float,float> qualityRange;
   switch(ID(action))
   {
     case FP_CREATEISO :
-          parlst.addParam(new RichInt("Resolution",64,"Grid Resolution","Resolution of the side of the cubic grid used for the volume creation"));
+          parlst.addParam(RichInt("Resolution",64,"Grid Resolution","Resolution of the side of the cubic grid used for the volume creation"));
           break;
   default: break; // do not add any parameter for the other filters
   }

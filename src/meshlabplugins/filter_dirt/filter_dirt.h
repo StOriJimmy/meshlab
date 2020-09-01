@@ -59,14 +59,15 @@ public:
     FilterDirt();
     ~FilterDirt(){};
 
+    QString pluginName() const;
     virtual QString filterName(FilterIDType filter) const;
     virtual QString filterInfo(FilterIDType filter) const;
     virtual int getRequirements(QAction *);
     virtual bool autoDialog(QAction *) {return true;}
     //      virtual void initParameterSet(QAction* filter,MeshModel &,RichParameterSet &){};
-    virtual void initParameterSet(QAction *,MeshDocument &/*m*/, RichParameterSet & /*parent*/);
-    virtual bool applyFilter(QAction*  filter, MeshDocument &md, RichParameterSet & par, vcg::CallBackPos *cb);
-    virtual bool applyFilter(QAction * /*filter */, MeshModel &, RichParameterSet & /*parent*/, vcg::CallBackPos *) { assert(0); return false;} ;
+    virtual void initParameterSet(QAction *,MeshDocument &/*m*/, RichParameterList & /*parent*/);
+    virtual bool applyFilter(QAction*  filter, MeshDocument &md, const RichParameterList & par, vcg::CallBackPos *cb);
+    virtual bool applyFilter(QAction * /*filter */, MeshModel &, const RichParameterList & /*parent*/, vcg::CallBackPos *) { assert(0); return false;} ;
     virtual int postCondition(QAction*) const;
     virtual FilterClass getClass(QAction *);
     FILTER_ARITY filterArity(QAction*) const {return SINGLE_MESH;}

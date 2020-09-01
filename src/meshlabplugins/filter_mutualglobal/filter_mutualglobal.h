@@ -39,7 +39,7 @@ add sampleplugins
 #include <common/interfaces.h>
 #include "alignset.h"
 
-class FilterMutualInfoPlugin : public QObject, public MeshFilterInterface
+class FilterMutualGlobal : public QObject, public MeshFilterInterface
 {
 	Q_OBJECT
 	MESHLAB_PLUGIN_IID_EXPORTER(MESH_FILTER_INTERFACE_IID)
@@ -48,18 +48,18 @@ class FilterMutualInfoPlugin : public QObject, public MeshFilterInterface
 public:
 	enum { FP_IMAGE_GLOBALIGN} ;
 
-	FilterMutualInfoPlugin();
+	FilterMutualGlobal();
 
-	virtual QString pluginName(void) const { return "FilterMutualInfoPlugin"; }
+	QString pluginName() const;
 
 	QString filterName(FilterIDType filter) const;
 	QString filterInfo(FilterIDType filter) const;
-	void initParameterSet(QAction *,MeshDocument & md, RichParameterSet & /*parent*/);
-	bool applyFilter(QAction *filter, MeshDocument &md, RichParameterSet & /*parent*/, vcg::CallBackPos * cb) ;
+	void initParameterSet(QAction *,MeshDocument & md, RichParameterList & /*parent*/);
+	bool applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & /*parent*/, vcg::CallBackPos * cb) ;
 	int postCondition(QAction*) const { return MeshModel::MM_NONE; };
 	FilterClass getClass(QAction *a);
 	QString filterScriptFunctionName(FilterIDType filterID);
-	bool preAlignment(MeshDocument &md, RichParameterSet & par, vcg::CallBackPos *cb);
+	bool preAlignment(MeshDocument &md, const RichParameterList& par, vcg::CallBackPos *cb);
 	std::vector<SubGraph> buildGraph(MeshDocument &md, bool globalign=true);
 	std::vector<AlignPair> CalcPairs(MeshDocument &md, bool globalign=true);
 	std::vector<SubGraph> CreateGraphs(MeshDocument &md, std::vector<AlignPair> arcs);

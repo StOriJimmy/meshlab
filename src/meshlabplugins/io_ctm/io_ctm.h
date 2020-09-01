@@ -41,13 +41,15 @@ class IOMPlugin : public QObject, public MeshIOInterface
 
   
 public:
+	QString pluginName() const;
+
 	QList<Format> importFormats() const;
 	QList<Format> exportFormats() const;
 
 	virtual void GetExportMaskCapability(QString &format, int &capability, int &defaultBits) const;
-    void initSaveParameter(const QString &/*format*/, MeshModel &/*m*/, RichParameterSet & /*par*/);
-    bool open(const QString &formatName, const QString &fileName, MeshModel &m, int& mask,const RichParameterSet & par, vcg::CallBackPos *cb=0, QWidget *parent=0);
-    bool save(const QString &formatName, const QString &fileName, MeshModel &m, const int mask,const RichParameterSet & par,  vcg::CallBackPos *cb, QWidget *parent);
+    void initSaveParameter(const QString &/*format*/, MeshModel &/*m*/, RichParameterList & /*par*/);
+    bool open(const QString &formatName, const QString &fileName, MeshModel &m, int& mask,const RichParameterList & par, vcg::CallBackPos *cb=0, QWidget *parent=0);
+    bool save(const QString &formatName, const QString &fileName, MeshModel &m, const int mask,const RichParameterList & par,  vcg::CallBackPos *cb, QWidget *parent);
 
 };
 

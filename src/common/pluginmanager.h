@@ -39,23 +39,24 @@ public:
     PluginManager();
     ~PluginManager();
     enum TypeIO{IMPORT,EXPORT};
-    void loadPlugins(RichParameterSet& defaultGlobal);
+	void loadPlugins(RichParameterList& defaultGlobal);
+	void loadPlugins(RichParameterList& defaultGlobal, const QDir& pluginsDirectory);
     QString pluginsCode() const;
 
-    inline QVector<MeshIOInterface*>& meshIOPlugins()  {return meshIOPlug;}
+    int numberIOPlugins() const;
     inline QVector<MeshFilterInterface*>& meshFilterPlugins()  {return meshFilterPlug;}
     inline QVector<MeshRenderInterface*>& meshRenderPlugins()  {return meshRenderPlug;}
     inline QVector<MeshDecorateInterface*>& meshDecoratePlugins()  {return meshDecoratePlug;}
     inline QVector<MeshEditInterfaceFactory*>& meshEditFactoryPlugins()  {return meshEditInterfacePlug;}
-    void knownIOFormats();
+
     static QString getDefaultPluginDirPath();
     static QString getBaseDirPath();
 
-    QMap<QString,RichParameterSet> generateFilterParameterMap();
+    QMap<QString,RichParameterList> generateFilterParameterMap();
 
     MeshDecorateInterface* getDecoratorInterfaceByName(const QString& name);
 
-    QDir pluginsDir;
+
     QMap<QString, QAction*> actionFilterMap;
     QMap<QString, MeshFilterInterface*> stringFilterMap;
     QMap<QString,MeshIOInterface*> allKnowInputFormats;
@@ -77,6 +78,12 @@ public:
 
     static QString osDependentFileBaseName(const QString& plname);
     static QString osIndependentPluginName(const QString& plname);
+
+private:
+    QDir pluginsDir;
+
+
+    void knownIOFormats();
 };
 
 #endif // PLUGINMANAGER_H

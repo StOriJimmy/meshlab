@@ -46,15 +46,15 @@ public:
 
 	FilterMeasurePlugin();
 
-	virtual QString pluginName(void) const { return "FilterMeasure"; }
+	QString pluginName() const;
 
 	QString filterName(FilterIDType filter) const;
 	QString filterInfo(FilterIDType filter) const;
 	FilterClass getClass(QAction*);
 	FILTER_ARITY filterArity(QAction*) const;
 	int getPreConditions(QAction *action) const;
-	void initParameterSet(QAction* , MeshModel& m, RichParameterSet& parlst);
-	bool applyFilter(QAction* filter, MeshDocument& md, RichParameterSet& parlst, vcg::CallBackPos*) ;
+	void initParameterSet(QAction* , MeshModel& m, RichParameterList& parlst);
+	bool applyFilter(QAction* filter, MeshDocument& md, const RichParameterList& parlst, vcg::CallBackPos*) ;
 	int postCondition( QAction* ) const;
 
 private:

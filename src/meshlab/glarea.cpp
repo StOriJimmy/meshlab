@@ -50,7 +50,7 @@
 using namespace std;
 using namespace vcg;
 
-GLArea::GLArea(QWidget *parent, MultiViewer_Container *mvcont, RichParameterSet *current)
+GLArea::GLArea(QWidget *parent, MultiViewer_Container *mvcont, RichParameterList *current)
     : QGLWidget(parent,mvcont->sharedDataContext()),interrbutshow(false)
 {
 	makeCurrent();
@@ -120,7 +120,7 @@ GLArea::GLArea(QWidget *parent, MultiViewer_Container *mvcont, RichParameterSet 
     //connecting the MainWindow Slots to GLArea signal (simple passthrough)
     if(mainwindow != NULL){
         connect(this,SIGNAL(updateMainWindowMenus()),mainwindow,SLOT(updateMenus()));
-        connect(mainwindow,SIGNAL(dispatchCustomSettings(RichParameterSet&)),this,SLOT(updateCustomSettingValues(RichParameterSet&)));
+		connect(mainwindow,SIGNAL(dispatchCustomSettings(const RichParameterList&)),this,SLOT(updateCustomSettingValues(const RichParameterList&)));
     }else{
         qDebug("The parent of the GLArea parent is not a pointer to the meshlab MainWindow.");
     }
@@ -200,7 +200,7 @@ void GLArea::pasteTile()
         if (snapBuffer.isNull())
             snapBuffer = QImage(tileBuffer.width() * ss.resolution, tileBuffer.height() * ss.resolution, tileBuffer.format());
 
-        uchar *snapPtr = snapBuffer.bits() + (tileBuffer.bytesPerLine() * tileCol) + ((totalCols * tileRow) * tileBuffer.byteCount());
+		uchar *snapPtr = snapBuffer.bits() + (tileBuffer.bytesPerLine() * tileCol) + ((totalCols * tileRow) * tileBuffer.byteCount());
         uchar *tilePtr = tileBuffer.bits();
 
         for (int y=0; y < tileBuffer.height(); y++)
@@ -1129,7 +1129,7 @@ void GLArea::setCurrentEditAction(QAction *editAction)
     {
         Logf(GLLogStream::SYSTEM,"Started Mode %s", qUtf8Printable(currentEditor->text()));
 		if(mm()!=NULL)
-            mm()->meshModified() = true;
+			mm()->setMeshModified();
         else assert(!iEdit->isSingleMeshEdit());
 		update();
     }
@@ -1294,60 +1294,58 @@ void GLArea::tabletEvent(QTabletEvent*e)
 void GLArea::wheelEvent(QWheelEvent*e)
 {
 	makeCurrent();
-    setFocus();
-    if( (iEdit && !suspendedEditor) )
-    {
-        iEdit->wheelEvent(e,*mm(),this);
-    }
-    else
-    {
-        const int WHEEL_STEP = 120;
-        float notch = e->delta()/ float(WHEEL_STEP);
-        switch(e->modifiers())
-        {
-        case Qt::ControlModifier: 
-            {
-                clipRatioNear = math::Clamp(clipRatioNear*powf(1.1f, notch),0.01f,500.0f); 
-                break;
-            }
-        case Qt::ShiftModifier: 
-            {
-                fov = math::Clamp(fov+1.2f*notch,5.0f,90.0f); 
-                break;
-            }
-        case Qt::AltModifier:
-            { 
-				glas.pointSize = math::Clamp(glas.pointSize*powf(1.2f, notch), MLPerViewGLOptions::minPointSize(), MLPerViewGLOptions::maxPointSize());
-                MLSceneGLSharedDataContext* cont = mvc()->sharedDataContext();
-                if (cont != NULL)
-                {
-					foreach(MeshModel * mp, this->md()->meshList)
-					{
-						MLRenderingData dt;
-						cont->getRenderInfoPerMeshView(mp->id(), context(), dt);
-						MLPerViewGLOptions opt;
-						dt.get(opt);
-						opt._perpoint_pointsize = glas.pointSize;
-						opt._perpoint_pointsmooth_enabled = glas.pointSmooth;
-						opt._perpoint_pointattenuation_enabled = glas.pointDistanceAttenuation;
-						cont->setGLOptions(mp->id(), context(), opt);
-					}
-					if (mw() != NULL)
-						mw()->updateLayerDialog();
-                }
-                break;
-            }
-        default:
-            {            
-                if(isRaster())
-                    this->opacity = math::Clamp( opacity*powf(1.2f, notch),0.1f,1.0f);
-                else
-                    trackball.MouseWheel( e->delta()/ float(WHEEL_STEP));
-                break;
-            }
-        }
-    }
-    update();
+	setFocus();
+	if( (iEdit && !suspendedEditor) )
+	{
+		iEdit->wheelEvent(e,*mm(),this);
+	}
+	else
+	{
+
+		const int WHEEL_STEP = 120;
+		float notch = e->angleDelta().y()/ float(WHEEL_STEP);
+		if (glas.wheelDirection)
+			notch *= -1;
+		switch(e->modifiers())
+		{
+		case Qt::ControlModifier:
+			clipRatioNear = math::Clamp(clipRatioNear*powf(1.1f, notch),0.01f,500.0f);
+			break;
+		case Qt::ShiftModifier:
+			fov = math::Clamp(fov+1.2f*notch,5.0f,90.0f);
+			break;
+		case Qt::AltModifier:
+		{
+			glas.pointSize = math::Clamp(glas.pointSize*powf(1.2f, notch), MLPerViewGLOptions::minPointSize(), MLPerViewGLOptions::maxPointSize());
+			MLSceneGLSharedDataContext* cont = mvc()->sharedDataContext();
+			if (cont != NULL)
+			{
+				foreach(MeshModel * mp, this->md()->meshList)
+				{
+					MLRenderingData dt;
+					cont->getRenderInfoPerMeshView(mp->id(), context(), dt);
+					MLPerViewGLOptions opt;
+					dt.get(opt);
+					opt._perpoint_pointsize = glas.pointSize;
+					opt._perpoint_pointsmooth_enabled = glas.pointSmooth;
+					opt._perpoint_pointattenuation_enabled = glas.pointDistanceAttenuation;
+					cont->setGLOptions(mp->id(), context(), opt);
+				}
+				if (mw() != NULL)
+					mw()->updateLayerDialog();
+			}
+			break;
+		}
+		default:
+			if(isRaster())
+				this->opacity = math::Clamp( opacity*powf(1.2f, notch),0.1f,1.0f);
+			else {
+				trackball.MouseWheel(notch);
+			}
+			break;
+		}
+	}
+	update();
 }
 
 
@@ -1754,7 +1752,7 @@ Point3f GLArea::getViewDir()
     return vcg::Inverse(rotM)*vcg::Point3f(0,0,1);
 }
 
-void GLArea::updateCustomSettingValues( RichParameterSet& rps )
+void GLArea::updateCustomSettingValues( const RichParameterList& rps )
 {
 	makeCurrent();
     glas.updateGlobalParameterSet(rps);
@@ -1762,7 +1760,7 @@ void GLArea::updateCustomSettingValues( RichParameterSet& rps )
     this->update();
 }
 
-void GLArea::initGlobalParameterSet( RichParameterSet * defaultGlobalParamSet)
+void GLArea::initGlobalParameterSet( RichParameterList * defaultGlobalParamSet)
 {
     GLAreaSetting::initGlobalParameterSet(defaultGlobalParamSet);
 }
@@ -2233,7 +2231,7 @@ QPair<Shotm,float> GLArea::shotFromTrackball()
 
     float cameraDist = getCameraDistance();
 
-    //add the translation introduced by gluLookAt() (0,0,cameraDist), in order to have te same view---------------
+    //add the translation introduced by gluLookAt() (0,0,cameraDist), in order to have the same view---------------
     //T(gl)*S*R*T(t) => SR(gl+t) => S R (S^(-1)R^(-1)gl + t)
     //Add translation S^(-1) R^(-1)(gl)
     //Shotd doesn't introduce scaling
@@ -2350,7 +2348,7 @@ void GLArea::createOrthoView(QString dir)
 
     float cameraDist = getCameraDistance();
 
-    //add the translation introduced by gluLookAt() (0,0,cameraDist), in order to have te same view---------------
+    //add the translation introduced by gluLookAt() (0,0,cameraDist), in order to have the same view---------------
     //T(gl)*S*R*T(t) => SR(gl+t) => S R (S^(-1)R^(-1)gl + t)
     //Add translation S^(-1) R^(-1)(gl)
     //Shotd doesn't introduce scaling

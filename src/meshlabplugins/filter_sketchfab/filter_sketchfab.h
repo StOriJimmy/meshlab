@@ -38,28 +38,28 @@ public:
 
 	FilterSketchFabPlugin();
 
-	virtual QString pluginName(void) const;
+	QString pluginName() const;
 	QString filterName(FilterIDType filter) const;
 	QString filterInfo(FilterIDType filter) const;
 	FilterClass getClass(QAction *a);
 	FILTER_ARITY filterArity(QAction *a) const;
 	int getPreConditions(QAction *) const;
 	int postCondition( QAction* ) const;
-	void initParameterSet(QAction *,MeshModel &/*m*/, RichParameterSet & /*parent*/);
-	bool applyFilter(QAction *filter, MeshDocument &md, RichParameterSet & /*parent*/, vcg::CallBackPos * cb) ;
+	void initParameterSet(QAction *,MeshModel &/*m*/, RichParameterList & /*parent*/);
+	bool applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & /*parent*/, vcg::CallBackPos * cb) ;
 
 public slots:
 	void finished();
 	void uploadProgress(qint64 bytesSent, qint64 bytesTotal);
 
 private:
-	bool sketchfab(
-			MeshDocument &md,
+	bool sketchfab(MeshDocument &md,
 			vcg::CallBackPos* cb,
 			const QString& apiToken,
 			const QString&,
 			const QString&,
 			const QString&,
+			bool,
 			bool,
 			bool,
 			bool);
@@ -83,6 +83,7 @@ private:
 
 	bool uploadCompleteFlag;
 	vcg::CallBackPos * fcb;
+	const QString DEFAULT_API = "00000000";
 
 };
 

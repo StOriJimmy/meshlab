@@ -84,12 +84,12 @@ class FilterImgPatchParamPlugin : public QObject, public MeshFilterInterface
                                       int textureGutter,
                                       bool allowUVStretching );
 
-    void                patchBasedTextureParameterization( RasterPatchMap &patches,
+    void                patchBasedTextureParameterization(RasterPatchMap &patches,
                                                            PatchVec &nullPatches,
                                                            int meshid,
                                                            CMeshO &mesh,
                                                            QList<RasterModel*> &rasterList,
-                                                           RichParameterSet &par );
+                                                           const RichParameterList& par );
 
     float               computeTotalPatchArea( RasterPatchMap &patches );
     int                 computePatchCount( RasterPatchMap &patches );
@@ -99,6 +99,7 @@ public:
     FilterImgPatchParamPlugin();
     ~FilterImgPatchParamPlugin();
 
+    QString pluginName() const;
     virtual QString     filterName( FilterIDType id ) const;
     virtual QString     filterInfo( FilterIDType id ) const;
 
@@ -106,14 +107,14 @@ public:
 
     virtual void        initParameterSet( QAction *act,
                                           MeshDocument &md,
-                                          RichParameterSet &par );
+                                          RichParameterList &par );
 
     virtual int         getRequirements( QAction *act );
     //virtual int         postCondition( QAction *act ) const;
 
     virtual bool        applyFilter( QAction *act,
                                      MeshDocument &md,
-                                     RichParameterSet &par,
+                                     const RichParameterList &par,
                                      vcg::CallBackPos *cb );
 
     FILTER_ARITY filterArity(QAction *) const {return SINGLE_MESH;}

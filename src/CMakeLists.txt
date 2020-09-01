@@ -49,6 +49,7 @@ option(ALLOW_BUNDLED_OPENCTM "Allow use of bundled OpenCTM source" ON)
 option(ALLOW_BUNDLED_SSYNTH "Allow use of bundled structure-synth source" ON)
 option(ALLOW_BUNDLED_QHULL "Allow use of bundled Qhull source" ON)
 option(ALLOW_BUNDLED_U3D "Allow use of bundled u3d source" ON)
+option(ALLOW_BUNDLED_OPENGR "Allow use of bundled OpenGR source" ON)
 
 option(ALLOW_SYSTEM_EIGEN "Allow use of system-provided Eigen" ON)
 option(ALLOW_SYSTEM_GLEW "Allow use of system-provided GLEW" ON)
@@ -81,7 +82,7 @@ find_package(GMP)
 find_package(muparser)
 find_package(OpenCTM)
 # TODO dynamic qhull that isn't qhull_r is deprecated: port to qhull_r
-find_package(Qhull COMPONENTS qhull)
+find_package(Qhull COMPONENTS libqhull)
 find_package(OpenMP)
 
 if(WIN32)
@@ -215,6 +216,7 @@ else()
         meshlabplugins/filter_dirt
         meshlabplugins/filter_fractal
         meshlabplugins/filter_func
+		meshlabplugins/filter_globalregistration
         meshlabplugins/filter_img_patch_param
         meshlabplugins/filter_isoparametrization
         meshlabplugins/filter_layer
@@ -341,7 +343,7 @@ endif()
 
 if(NOT WIN32 AND NOT APPLE)
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../install/linux/resources/meshlab.desktop" DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../install/meshlab.png" DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/pixmaps)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../install/meshlab.png" DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pixmaps)
 endif()
 
 if(Qt5_windeployqt_EXECUTABLE AND BUILD_WITH_WINDEPLOYQT_POST_BUILD)

@@ -40,7 +40,7 @@ using namespace vcg;
 
 
 
-bool ExpeIOPlugin::open(const QString &formatName, const QString &fileName, MeshModel &m, int& mask, const RichParameterSet & /*parlst*/, CallBackPos *cb, QWidget *parent)
+bool ExpeIOPlugin::open(const QString &formatName, const QString &fileName, MeshModel &m, int& mask, const RichParameterList & /*parlst*/, CallBackPos *cb, QWidget *parent)
 {
 	// initializing mask
 	mask = 0;
@@ -52,25 +52,39 @@ bool ExpeIOPlugin::open(const QString &formatName, const QString &fileName, Mesh
 	QString error_2MsgFormat = "Error encountered while loading file:\n\"%1\"\n\n File with more than a mesh.\n Load only the first!";
 
 	string filename = QFile::encodeName(fileName).constData ();
-
+    bool useXYZ=false;
 	if ( (formatName.toLower() == tr("pts")) || (formatName.toLower() == tr("apts")) )
-	{
-		int loadMask;
-		if (!vcg::tri::io::ImporterExpePTS<CMeshO>::LoadMask(filename.c_str(),loadMask))
-			return false;
-    //std::cout << "loadMask = " << loadMask << "\n";
-		m.Enable(loadMask);
-
-
-		int result = vcg::tri::io::ImporterExpePTS<CMeshO>::Open(m.cm, filename.c_str(), mask, cb);
-		if (result != 0)
-		{
-			QMessageBox::warning(parent, tr("Expe Point Set Opening Error"),
-													 errorMsgFormat.arg(fileName, vcg::tri::io::ImporterExpePTS<CMeshO>::ErrorMsg(result)));
-			return false;
-		}
-
-  }
+    {
+      int loadMask;
+      if (!vcg::tri::io::ImporterExpePTS<CMeshO>::LoadMask(filename.c_str(),loadMask))
+      {
+        useXYZ=true;
+        if (!vcg::tri::io::ImporterXYZ<CMeshO>::LoadMask(filename.c_str(),loadMask)) 
+          return false;
+      }        
+      m.Enable(loadMask);
+      int result;
+      if(useXYZ) {
+        result = vcg::tri::io::ImporterXYZ<CMeshO>::Open(m.cm, filename.c_str(), mask, cb);     
+        if (result != 0)
+        {
+          QMessageBox::warning(parent, tr("PTX Point Set Opening Error"),
+                               errorMsgFormat.arg(fileName, vcg::tri::io::ImporterXYZ<CMeshO>::ErrorMsg(result)));
+          return false;
+        }
+      }
+      else 
+      {
+        result = vcg::tri::io::ImporterExpePTS<CMeshO>::Open(m.cm, filename.c_str(), mask, cb);     
+        if (result != 0)
+        {
+          QMessageBox::warning(parent, tr("Expe Point Set Opening Error"),
+                               errorMsgFormat.arg(fileName, vcg::tri::io::ImporterExpePTS<CMeshO>::ErrorMsg(result)));
+          return false;
+        }
+      }
+      
+    }
   else if (formatName.toLower() == tr("xyz"))
   {
     int loadMask;
@@ -96,7 +110,7 @@ bool ExpeIOPlugin::open(const QString &formatName, const QString &fileName, Mesh
 	return true;
 }
 
-bool ExpeIOPlugin::save(const QString &formatName, const QString &fileName, MeshModel &m, const int mask, const RichParameterSet &, vcg::CallBackPos * /*cb*/, QWidget *parent)
+bool ExpeIOPlugin::save(const QString &formatName, const QString &fileName, MeshModel &m, const int mask, const RichParameterList &, vcg::CallBackPos * /*cb*/, QWidget *parent)
 {
 	QString errorMsgFormat = "Error encountered while exporting file %1:\n%2";
 	string filename = QFile::encodeName(fileName).constData ();
@@ -131,6 +145,11 @@ bool ExpeIOPlugin::save(const QString &formatName, const QString &fileName, Mesh
 /*
 	returns the list of the file's type which can be imported
 */
+QString ExpeIOPlugin::pluginName() const
+{
+	return "IOExpe";
+}
+
 QList<MeshIOInterface::Format> ExpeIOPlugin::importFormats() const
 {
 	QList<Format> formatList;
