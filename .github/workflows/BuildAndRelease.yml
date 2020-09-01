@@ -2,8 +2,15 @@ name: BuildAndRelease
 
 on:
   #[push, pull_request] #just for test release scripts
-  schedule:
-    - cron:  '0 1 1 * *' #every first day of the month at 1am
+  workflow_dispatch: #manual run
+    inputs:
+      version:
+        description: 'New MeshLab Version'
+        required: true
+        default: 'YYYY.MM'
+  #schedule:
+  #  - cron:  '0 1 1 * *' #every first day of the month at 1am
+  
 
 jobs:
   update_ml_version:
@@ -12,18 +19,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        fetch-depth: 2
         submodules: true
-    - name: Setup env variables
-      id: envs
-      run: |
-        echo  ::set-output name=date::"$(date +%Y.%m)"
+    #- name: Setup env variables
+    #  id: envs
+    #  run: |
+    #    echo  ::set-output name=date::"$(date +%Y.%m)"
     - name: Update MeshLab version
       run : |
-        echo ${{steps.envs.outputs.date}} | tr -d '\n'> ML_VERSION
+        echo ${{ github.event.inputs.version }} | tr -d '\n'> ML_VERSION
     - name: Update Info.plist
       run: |
-        /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString ${{steps.envs.outputs.date}}" src/meshlab/Info.plist
-        /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${{steps.envs.outputs.date}}" src/meshlab/Info.plist
+        /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString ${{ github.event.inputs.version }}" src/meshlab/Info.plist
+        /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${{ github.event.inputs.version }}" src/meshlab/Info.plist
     - name: Update Snap file
       run: |
         sed "s%MESHLAB_VERSION%$(cat ML_VERSION)%g" install/linux/resources/snap/snap_noversion.yaml > snapcraft.yaml
@@ -40,6 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
@@ -89,6 +98,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
     - name: Install dependencies
       run: |
@@ -120,6 +130,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
     - name: Install dependencies
       run: |
@@ -164,8 +175,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        ref: master
         submodules: true
-    - name: Downlaod Jom
+    - name: Download Jom
       run: |
         Invoke-WebRequest -Uri "http://download.qt.io/official_releases/jom/jom_1_1_3.zip" -OutFile "jom_1_1_3.zip"
         New-Item -Name "jom" -ItemType "directory"
@@ -219,20 +231,10 @@ jobs:
     needs: [ubuntu_build_appimage, ubuntu_build_snap, macos_build, windows_build]
     runs-on: ubuntu-latest
     steps:
-    - name: Setup env variables
-      id: envs
-      run: |
-        echo ::set-output name=date::"$(date +%Y.%m)"
-    - name: Publish Release
-      id: create_release
-      uses: actions/create-release@v1.0.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: Meshlab-${{steps.envs.outputs.date}}
-        release_name: MeshLab-${{steps.envs.outputs.date}}
-        draft: false
-        prerelease: false
+    #- name: Setup env variables
+    #  id: envs
+    #  run: |
+    #    echo ::set-output name=date::"$(date +%Y.%m)"
 
     #Linux Release
     - name: Download Linux ZIP
@@ -256,67 +258,19 @@ jobs:
         chmod +x meshlab_linux_portable/usr/bin/meshlab
         chmod +x meshlab_linux_portable/usr/bin/meshlabserver
         chmod +x meshlab_linux_portable/AppRun
-        chmod +x meshlab_linux_appimage/MeshLab${{steps.envs.outputs.date}}-linux.AppImage
-        chmod +x meshlabserver_linux_appimage/MeshLabServer${{steps.envs.outputs.date}}-linux.AppImage
+        chmod +x meshlab_linux_appimage/MeshLab${{ github.event.inputs.version }}-linux.AppImage
+        chmod +x meshlabserver_linux_appimage/MeshLabServer${{ github.event.inputs.version }}-linux.AppImage
     - name: Create MeshLab Portable Linux Archive
       run: |
-        tar -cvzf MeshLab${{steps.envs.outputs.date}}-linux.tar.gz meshlab_linux_portable/
-    - name: Upload ReleaseLinuxPortable
-      id: upload-release-linux-portable
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: MeshLab${{steps.envs.outputs.date}}-linux.tar.gz
-        asset_name: MeshLab${{steps.envs.outputs.date}}-linux.tar.gz
-        asset_content_type: MeshLab Portable for Linux
-    - name: Upload ReleaseLinuxAppImage
-      id: upload-release-linux-appimage
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: meshlab_linux_appimage/MeshLab${{steps.envs.outputs.date}}-linux.AppImage
-        asset_name: MeshLab${{steps.envs.outputs.date}}-linux.AppImage
-        asset_content_type: MeshLab AppImage for Linux
-    - name: Upload ReleaseLinuxMeshLabServerAppImage
-      id: upload-release-linux-meshlabserver-appimage
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: meshlabserver_linux_appimage/MeshLabServer${{steps.envs.outputs.date}}-linux.AppImage
-        asset_name: MeshLabServer${{steps.envs.outputs.date}}-linux.AppImage
-        asset_content_type: MeshLabServer AppImage for Linux
-    - name: Upload ReleaseLinuxSnap
-      id: upload-release-linux-snap
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: meshlab_linux_snap/MeshLab${{steps.envs.outputs.date}}-linux.snap
-        asset_name: MeshLab${{steps.envs.outputs.date}}-linux.snap
-        asset_content_type: MeshLab Snap for Linux
+        tar -cvzf MeshLab${{ github.event.inputs.version }}-linux.tar.gz meshlab_linux_portable/
+    
 
     #MacOS Release
     - name: Download MacOS DMG
       uses: actions/download-artifact@v1
       with:
         name: meshlab_macos_dmg
-    - name: Upload ReleaseMacOSDMG
-      id: upload-release-macos
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: meshlab_macos_dmg/MeshLab${{steps.envs.outputs.date}}-macos.dmg
-        asset_name: MeshLab${{steps.envs.outputs.date}}-macos.dmg
-        asset_content_type: MeshLab for MacOS
+        
 
     #Windows Release
     - name: Download Windows ZIP
@@ -329,7 +283,73 @@ jobs:
         name: meshlab_windows_installer
     - name: Create MeshLab Portable Windows Archive
       run: |
-        zip -r MeshLab${{steps.envs.outputs.date}}-windows.zip meshlab_windows_portable/
+        zip -r MeshLab${{ github.event.inputs.version }}-windows.zip meshlab_windows_portable/
+    
+    
+    #Create release and upload
+    - name: Publish Release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: Meshlab-${{ github.event.inputs.version }}
+        release_name: MeshLab-${{ github.event.inputs.version }}
+        draft: false
+        prerelease: false
+    #Linux
+    - name: Upload ReleaseLinuxPortable
+      id: upload-release-linux-portable
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: MeshLab${{ github.event.inputs.version }}-linux.tar.gz
+        asset_name: MeshLab${{ github.event.inputs.version }}-linux.tar.gz
+        asset_content_type: MeshLab Portable for Linux
+    - name: Upload ReleaseLinuxAppImage
+      id: upload-release-linux-appimage
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: meshlab_linux_appimage/MeshLab${{ github.event.inputs.version }}-linux.AppImage
+        asset_name: MeshLab${{ github.event.inputs.version }}-linux.AppImage
+        asset_content_type: MeshLab AppImage for Linux
+    - name: Upload ReleaseLinuxMeshLabServerAppImage
+      id: upload-release-linux-meshlabserver-appimage
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: meshlabserver_linux_appimage/MeshLabServer${{ github.event.inputs.version }}-linux.AppImage
+        asset_name: MeshLabServer${{ github.event.inputs.version }}-linux.AppImage
+        asset_content_type: MeshLabServer AppImage for Linux
+    - name: Upload ReleaseLinuxSnap
+      id: upload-release-linux-snap
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: meshlab_linux_snap/MeshLab${{ github.event.inputs.version }}-linux.snap
+        asset_name: MeshLab${{ github.event.inputs.version }}-linux.snap
+        asset_content_type: MeshLab Snap for Linux
+    #MacOS
+    - name: Upload ReleaseMacOSDMG
+      id: upload-release-macos
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: meshlab_macos_dmg/MeshLab${{ github.event.inputs.version }}-macos.dmg
+        asset_name: MeshLab${{ github.event.inputs.version }}-macos.dmg
+        asset_content_type: MeshLab for MacOS
+    #Windows
     - name: Upload ReleaseWindowsPortable
       id: upload-release-windows-portable
       uses: actions/upload-release-asset@v1.0.1
@@ -337,8 +357,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: MeshLab${{steps.envs.outputs.date}}-windows.zip
-        asset_name: MeshLab${{steps.envs.outputs.date}}-windows.zip
+        asset_path: MeshLab${{ github.event.inputs.version }}-windows.zip
+        asset_name: MeshLab${{ github.event.inputs.version }}-windows.zip
         asset_content_type: MeshLab Portable for Windows
     - name: Upload ReleaseWindowsInstaller
       id: upload-release-windows-installer
@@ -347,6 +367,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: meshlab_windows_installer/MeshLab${{steps.envs.outputs.date}}-windows.exe
-        asset_name: MeshLab${{steps.envs.outputs.date}}-windows.exe
+        asset_path: meshlab_windows_installer/MeshLab${{ github.event.inputs.version }}-windows.exe
+        asset_name: MeshLab${{ github.event.inputs.version }}-windows.exe
         asset_content_type: MeshLab Portable for Windows

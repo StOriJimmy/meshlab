@@ -30,6 +30,7 @@
 #include "mlexception.h"
 #include "ml_shared_data_context.h"
 
+#include <QDir>
 #include <utility>
 
 using namespace vcg;
@@ -42,42 +43,60 @@ MeshDocument::~MeshDocument()
         delete mmp;
     foreach(RasterModel* rmp,rasterList)
         delete rmp;
-    delete filterHistory;
+	delete filterHistory;
+}
+
+const MeshModel* MeshDocument::getMesh(int id) const
+{
+	for (const MeshModel* m : meshList)
+		if (m->id() == id)
+			return m;
+	return nullptr;
 }
 
 //returns the mesh ata given position in the list
-MeshModel *MeshDocument::getMesh(int i)
+MeshModel* MeshDocument::getMesh(int id)
 {
-    foreach(MeshModel *mmp, meshList)
-    {
-        if(mmp->id() == i) return mmp;
-    }
-    //assert(0);
-    return 0;
+	for (MeshModel* m : meshList)
+		if (m->id() == id)
+			return m;
+	return nullptr;
 }
 
-MeshModel *MeshDocument::getMesh(const QString& name)
+const MeshModel* MeshDocument::getMesh(const QString& name) const
 {
-    foreach(MeshModel *mmp, meshList)
-    {
-        if(mmp->shortName() == name) return mmp;
-    }
-    //assert(0);
-    return 0;
+	for (const MeshModel* m : meshList)
+		if (m->shortName() == name)
+			return m;
+	return nullptr;
 }
 
-MeshModel *MeshDocument::getMeshByFullName(const QString& pathName)
+MeshModel* MeshDocument::getMesh(const QString& name)
 {
-    foreach(MeshModel *mmp, meshList)
-    {
-        if(mmp->fullName() == pathName) return mmp;
-    }
-    //assert(0);
-    return 0;
+	for (MeshModel* m : meshList)
+		if (m->shortName() == name)
+			return m;
+	return nullptr;
+}
+
+const MeshModel* MeshDocument::getMeshByFullName(const QString& pathName) const
+{
+	for (const MeshModel* m : meshList)
+		if (m->fullName() == pathName)
+			return m;
+	return nullptr;
+}
+
+MeshModel* MeshDocument::getMeshByFullName(const QString& pathName)
+{
+	for (MeshModel* m : meshList)
+		if (m->fullName() == pathName)
+			return m;
+	return nullptr;
 }
 
 
-void MeshDocument::setCurrentMesh( int new_curr_id)
+void MeshDocument::setCurrentMesh(int new_curr_id)
 {
     if(new_curr_id<0)
     {
@@ -355,8 +374,8 @@ MeshDocument::MeshDocument()
 {
     meshIdCounter=0;
     rasterIdCounter=0;
-    currentMesh = 0;
-    currentRaster = 0;
+    currentMesh = nullptr;
+    currentRaster = nullptr;
     busy=false;
     filterHistory = new FilterScript();
 }
@@ -364,7 +383,7 @@ MeshDocument::MeshDocument()
 
 void MeshModel::Clear()
 {
-    meshModified() = false;
+	setMeshModified(false);
     // These data are always active on the mesh
     currentDataMask = MM_NONE;
     currentDataMask |= MM_VERTCOORD | MM_VERTNORMAL | MM_VERTFLAG ;
@@ -787,9 +806,14 @@ void MeshModel::Enable(int openingFileMask)
     if( openingFileMask & tri::io::Mask::IOM_BITPOLYGONAL ) updateDataMask(MM_POLYGONAL);
 }
 
-bool& MeshModel::meshModified()
+bool MeshModel::meshModified() const
 {
-    return this->modified;
+	return modified;
+}
+
+void MeshModel::setMeshModified(bool b)
+{
+	modified = b;
 }
 
 int MeshModel::dataMask() const

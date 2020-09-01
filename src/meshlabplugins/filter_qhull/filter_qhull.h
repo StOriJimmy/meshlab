@@ -55,10 +55,11 @@ public:
     QhullPlugin();
     ~QhullPlugin();
 
+    QString pluginName() const;
     virtual QString filterName(FilterIDType filter) const;
     virtual QString filterInfo(FilterIDType filter) const;
-    virtual void initParameterSet(QAction *,MeshModel &/*m*/, RichParameterSet & /*parent*/);
-    virtual bool applyFilter(QAction *filter, MeshDocument &m, RichParameterSet & /*parent*/, vcg::CallBackPos * cb) ;
+    virtual void initParameterSet(QAction *,MeshModel &/*m*/, RichParameterList & /*parent*/);
+    virtual bool applyFilter(QAction *filter, MeshDocument &m, const RichParameterList & /*parent*/, vcg::CallBackPos * cb) ;
     virtual FilterClass getClass(QAction *);	
     FILTER_ARITY filterArity(QAction *) const {return SINGLE_MESH;}
 };

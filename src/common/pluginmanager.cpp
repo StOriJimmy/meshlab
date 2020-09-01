@@ -54,9 +54,14 @@ PluginManager::~PluginManager()
 
 
 
-void PluginManager::loadPlugins(RichParameterSet& defaultGlobal)
+void PluginManager::loadPlugins(RichParameterList& defaultGlobal)
 {
-	pluginsDir = QDir(getDefaultPluginDirPath());
+	loadPlugins(defaultGlobal, QDir(getDefaultPluginDirPath()));
+}
+
+void PluginManager::loadPlugins(RichParameterList& defaultGlobal, const QDir& pluginsDirectory)
+{
+	pluginsDir = pluginsDirectory;
 	// without adding the correct library path in the mac the loading of jpg (done via qt plugins) fails
 	qApp->addLibraryPath(getDefaultPluginDirPath());
 	qApp->addLibraryPath(getBaseDirPath());
@@ -149,6 +154,11 @@ void PluginManager::loadPlugins(RichParameterSet& defaultGlobal)
 	knownIOFormats();
 }
 
+int PluginManager::numberIOPlugins() const
+{
+	return meshIOPlug.size();
+}
+
 // Search among all the decorator plugins the one that contains a decoration with the given name
 MeshDecorateInterface *PluginManager::getDecoratorInterfaceByName(const QString& name)
 {
@@ -165,9 +175,9 @@ MeshDecorateInterface *PluginManager::getDecoratorInterfaceByName(const QString&
 This function create a map from filtername to dummy RichParameterSet.
 containing for each filtername the set of parameter that it uses.
 */
-QMap<QString, RichParameterSet> PluginManager::generateFilterParameterMap()
+QMap<QString, RichParameterList> PluginManager::generateFilterParameterMap()
 {
-	QMap<QString, RichParameterSet> FPM;
+	QMap<QString, RichParameterList> FPM;
 	MeshDocument md;
 	MeshModel* mm = md.addNewMesh("", "dummy", true);
 	vcg::tri::Tetrahedron<CMeshO>(mm->cm);
@@ -177,7 +187,7 @@ QMap<QString, RichParameterSet> PluginManager::generateFilterParameterMap()
 	{
 		QString filterName = ai.key();//  ->filterName();
 									  //QAction act(filterName,NULL);
-		RichParameterSet rp;
+		RichParameterList rp;
 		stringFilterMap[filterName]->initParameterSet(ai.value(), md, rp);
 		FPM[filterName] = rp;
 	}

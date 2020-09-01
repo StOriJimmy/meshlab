@@ -38,14 +38,15 @@ public:
 
     FilterColorProjectionPlugin();
 
+    QString pluginName() const;
     virtual QString filterName(FilterIDType filter) const;
     virtual QString filterInfo(FilterIDType filter) const;
     int postCondition( QAction* ) const;
 
     virtual FilterClass getClass(QAction *);
-    virtual void initParameterSet(QAction *,MeshDocument &/*m*/, RichParameterSet & /*parent*/);
+    virtual void initParameterSet(QAction *,MeshDocument &/*m*/, RichParameterList & /*parent*/);
     virtual int getRequirements(QAction *);
-    virtual bool applyFilter(QAction *filter, MeshDocument &md, RichParameterSet & /*parent*/, vcg::CallBackPos * cb);
+    virtual bool applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & /*parent*/, vcg::CallBackPos * cb);
 
     FILTER_ARITY filterArity(QAction *) const {return SINGLE_MESH;}
 

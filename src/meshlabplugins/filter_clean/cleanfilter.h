@@ -63,6 +63,7 @@ public:
     CleanFilter();
     ~CleanFilter();
 
+    QString pluginName() const;
     virtual QString filterName(FilterIDType filter) const;
     virtual QString filterInfo(FilterIDType filter) const;
 
@@ -70,8 +71,8 @@ public:
     virtual int getRequirements(QAction *);
     int postCondition(QAction* ) const;
     int getPreConditions(QAction *) const {    return MeshModel::MM_NONE; } 
-    virtual void initParameterSet(QAction *,MeshDocument &/*m*/, RichParameterSet & /*parent*/);
-    virtual bool applyFilter(QAction *filter, MeshDocument &md, RichParameterSet & /*parent*/, vcg::CallBackPos * cb) ;
+    virtual void initParameterSet(QAction *,MeshDocument &/*m*/, RichParameterList & /*parent*/);
+    virtual bool applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & /*parent*/, vcg::CallBackPos * cb) ;
     FILTER_ARITY filterArity(QAction *) const {return SINGLE_MESH;}
 };
 

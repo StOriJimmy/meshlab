@@ -44,6 +44,7 @@ class DecorateBackgroundPlugin : public QObject, public MeshDecorateInterface
   Q_INTERFACES(MeshDecorateInterface)
   QString decorationName(FilterIDType id) const;
   QString decorationInfo(FilterIDType id) const;
+  QString pluginName() const;
 
   enum {
     DP_SHOW_CUBEMAPPED_ENV,
@@ -61,6 +62,7 @@ inline QString BoxRatioParam() const { return  "MeshLab::Decoration::BoxRatio" ;
 inline QString ShowShadowParam() const { return  "MeshLab::Decoration::ShowShadow" ; }
 inline QString GridColorBackParam() const { return  "MeshLab::Decoration::GridColorBack" ; }
 inline QString GridColorFrontParam() const { return  "MeshLab::Decoration::GridColorFront" ; }
+inline QString GridBaseLineWidthParam() const { return  "MeshLab::Decoration::GridBaseLineWidth" ; }
 
 public:
 
@@ -82,15 +84,15 @@ DecorateBackgroundPlugin()
 
   QString cubemapFileName;
 
-  bool startDecorate(QAction * /*mode*/, MeshDocument &/*m*/, RichParameterSet * /*parent*/ par, GLArea * /*parent*/);
-  void decorateDoc(QAction *a, MeshDocument &md, RichParameterSet *, GLArea *gla, QPainter *, GLLogStream &_log);
-  void decorateMesh(QAction *, MeshModel &, RichParameterSet *, GLArea *, QPainter *, GLLogStream &){}
-  void initGlobalParameterSet(QAction *, RichParameterSet &/*globalparam*/);
+  bool startDecorate(QAction * /*mode*/, MeshDocument &/*m*/, const RichParameterList * /*parent*/ par, GLArea * /*parent*/);
+  void decorateDoc(QAction *a, MeshDocument &md, const RichParameterList *, GLArea *gla, QPainter *, GLLogStream &_log);
+  void decorateMesh(QAction *, MeshModel &, const RichParameterList *, GLArea *, QPainter *, GLLogStream &){}
+  void initGlobalParameterSet(QAction *, RichParameterList &/*globalparam*/);
   int getDecorationClass(QAction * /*action*/) const { return MeshDecorateInterface::PerDocument; }
 
 
 private:
-  void DrawGriddedCube(MLSceneGLSharedDataContext* shared,QGLContext* cont,MeshModel &m, const Box3m &bb, Scalarm majorTick, Scalarm minorTick, bool backCullFlag, bool shadowFlag, vcg::Color4b frontColor, vcg::Color4b backColor);
+  void DrawGriddedCube(MLSceneGLSharedDataContext* shared,QGLContext* cont,MeshModel &m, const Box3m &bb, Scalarm majorTick, Scalarm minorTick, bool backCullFlag, bool shadowFlag, vcg::Color4b frontColor, vcg::Color4b backColor, float baseLineWidth);
   Shotm curShot;
 
 signals:

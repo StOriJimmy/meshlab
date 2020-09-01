@@ -323,11 +323,12 @@ endif()
 
 # qhull - optional, for filter_qhull
 set(QHULL_DIR ${EXTERNAL_DIR}/qhull-2003.1)
-if(ALLOW_SYSTEM_QHULL AND TARGET Qhull::qhull)
+if(ALLOW_SYSTEM_QHULL AND TARGET Qhull::libqhull)
     message(STATUS "- qhull - using system-provided library")
     add_library(external-qhull INTERFACE)
-    target_link_libraries(external-qhull INTERFACE Qhull::qhull)
-    target_include_directories(external-qhull INTERFACE ${QHULL_qhull_INCLUDE_DIR}/qhull)
+    target_link_libraries(external-qhull INTERFACE Qhull::libqhull)
+    target_compile_definitions(external-qhull INTERFACE SYSTEM_QHULL)
+    target_include_directories(external-qhull INTERFACE ${QHULL_libqhull_INCLUDE_DIR}/libqhull)
 elseif(ALLOW_BUNDLED_QHULL AND EXISTS "${QHULL_DIR}/src/qhull.h")
     message(STATUS "- qhull - using bundled source")
     add_library(
@@ -373,5 +374,13 @@ if(ALLOW_BUNDLED_U3D)
 
 	#target_include_directories(external-IDTFConverter SYSTEM PUBLIC "${U3D_DIR}/IDTF")
 	#set_property(TARGET external-IDTFConverter PROPERTY FOLDER External)
+endif()
+
+# opengr - optional and header-only, for filter_globalregistration
+set(OPENGR_DIR ${EXTERNAL_DIR}/OpenGR)
+if(ALLOW_BUNDLED_OPENGR AND EXISTS "${OPENGR_DIR}/src/gr/algorithms/match4pcsBase.h")
+	message(STATUS "- OpenGR - using bundled source")
+	add_library(external-opengr INTERFACE)
+	target_include_directories(external-opengr INTERFACE ${OPENGR_DIR}/src/)
 endif()
 

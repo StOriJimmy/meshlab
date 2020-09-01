@@ -68,14 +68,15 @@ public:
     AmbientOcclusionPlugin();
     ~AmbientOcclusionPlugin();
 
+    QString pluginName() const;
     QString filterName(FilterIDType filter) const;
     QString	filterInfo(FilterIDType filterId) const;
 	FILTER_ARITY filterArity(QAction*) const;
     int getRequirements (QAction *action);
 	FilterClass getClass(QAction *filter);
 
-    void initParameterSet(QAction *,MeshModel &/*m*/,RichParameterSet & /*parent*/);
-    bool applyFilter(QAction *filter,MeshDocument &md,RichParameterSet & /*parent*/,vcg::CallBackPos * cb) ;
+    void initParameterSet(QAction *,MeshModel &/*m*/,RichParameterList & /*parent*/);
+    bool applyFilter(QAction *filter,MeshDocument &md,const RichParameterList & /*parent*/,vcg::CallBackPos * cb) ;
     void initTextures(void);
     void initGL(vcg::CallBackPos *cb,unsigned int numVertices);
     bool processGL(MeshModel &m, std::vector<vcg::Point3f> &posVect);

@@ -208,7 +208,7 @@ public:
     void setLabel(QString newName) {_label=newName;}
 
     bool visible; // used in rendering; Needed for toggling on and off the meshes
-    bool isVisible() { return visible; }
+	bool isVisible() const { return visible; }
 
     // This function is roughly equivalent to the updateDataMask,
     // but it takes in input a mask coming from a filetype instead of a filter requirement (like topology etc)
@@ -221,7 +221,8 @@ public:
     int dataMask() const;
 
 
-    bool& meshModified();
+	bool meshModified() const;
+	void setMeshModified(bool b = true);
     static int io2mm(int single_iobit);
 };// end class MeshModel
 
@@ -473,20 +474,22 @@ private:
 
 class MeshDocument : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
 
-    MeshDocument();
+	MeshDocument();
 
-    //deletes each meshModel
-    ~MeshDocument();
+	//deletes each meshModel
+	~MeshDocument();
 
-    /// returns the mesh with the given unique id
-    MeshModel *getMesh(int id);
-    MeshModel *getMesh(const QString& name);
-    MeshModel *getMeshByFullName(const QString& pathName);
-
+	///returns the mesh with the given unique id
+	const MeshModel* getMesh(int id) const;
+	MeshModel *getMesh(int id);
+	const MeshModel *getMesh(const QString& name) const;
+	MeshModel *getMesh(const QString& name);
+	const MeshModel *getMeshByFullName(const QString& pathName) const;
+	MeshModel *getMeshByFullName(const QString& pathName);
 
     //set the current mesh to be the one with the given ID
     void setCurrentMesh( int new_curr_id );
@@ -539,9 +542,13 @@ public:
       return 0;
     }
 
-    MeshModel *mm() {
-        return currentMesh;
-    }
+	MeshModel* mm() {
+		return currentMesh;
+	}
+
+	const MeshModel* mm() const {
+		return currentMesh;
+	}
 
     //Could return 0 if no raster has been selected
     RasterModel *rm(){
