@@ -37,10 +37,12 @@ $Log: meshedit.cpp,v $
 #include <vcg/space/point_matching.h>
 #include <vcg/complex/algorithms/point_matching_scale.h>
 
+#include <QMessageBox>
+
 using namespace vcg;
 
 //todo: remove these orrible defs from here
-//make vcg::PointMatchingScale indipendent
+//make vcg::PointMatchingScale independent
 std::vector<vcg::Point3d>* vcg::PointMatchingScale::fix;
 std::vector<vcg::Point3d>* vcg::PointMatchingScale::mov;
 vcg::Box3d vcg::PointMatchingScale::b;
@@ -132,7 +134,7 @@ bool EditAlignPlugin::StartEdit(MeshDocument& md, GLArea * gla, MLSceneGLSharedD
     {
 
         // assigns random color: if less than 50 meshes, color is truly unique, and the less meshes, the more different they will be
-        // if above 50, truly unique color would geenrate too similar colors, so total number of unique color
+        // if above 50, truly unique color would generate too similar colors, so total number of unique color
         // is capped to 50 and the color reused, id that are close will have different color anyway
 		if (mm != NULL)
 		{
@@ -280,15 +282,15 @@ void EditAlignPlugin::glueByPicking()
 
     // i picked points sono in due sistemi di riferimento.
 
-    std::vector<vcg::Point3f>freePnt = dd->aa->freePickedPointVec;
-    std::vector<vcg::Point3f>gluedPnt= dd->aa->gluedPickedPointVec;
+    std::vector<Point3m>freePnt = dd->aa->freePickedPointVec;
+    std::vector<Point3m>gluedPnt= dd->aa->gluedPickedPointVec;
 
     if( (freePnt.size() != gluedPnt.size())	|| (freePnt.size()==0) )	{
         QMessageBox::warning(0,"Align tool", "ERROR: alignment requires the same number of chosen points");
         return;
     }
 
-    Matrix44f res;
+    Matrix44m res;
     if ((dd != NULL) && (dd->aa != NULL) && (dd->aa->allowscaling))
         ComputeSimilarityMatchMatrix(gluedPnt,freePnt,res);
     else

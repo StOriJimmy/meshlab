@@ -32,6 +32,7 @@ $Log: stdpardialog.cpp,v $
 #include <QActionGroup>
 #include <QDebug>
 #include <QFontMetrics>
+#include <QSettings>
 
 #include "mainwindow.h"
 #include "ui_layerDialog.h"
@@ -581,9 +582,18 @@ void LayerDialog::updateLog(const GLLogStream &log)
 	//ui->logPlainTextEdit->setFont(QFont("Courier",10));
 
 	pair<int,QString> logElem;
-	QString preWarn    = "<font face=\"courier\" size=3 color=\"red\"> Warning: " ;
-	QString preSystem  = "<font face=\"courier\" size=2 color=\"grey\">" ;
-	QString preFilter  = "<font face=\"courier\" size=2 color=\"black\">" ;
+#ifdef __APPLE__
+	QString warningColor = this->palette().color(QPalette::HighlightedText).name();
+	QString presystemColor = this->palette().color(QPalette::HighlightedText).name();
+	QString prefilterColor = this->palette().color(QPalette::Text).name();
+#else
+	QString warningColor = "red";
+	QString presystemColor = "grey";
+	QString prefilterColor = "black";
+#endif
+	QString preWarn    = "<font face=\"courier\" size=3 color=\"" + warningColor +"\"> Warning: " ;
+	QString preSystem  = "<font face=\"courier\" size=2 color=\"" + presystemColor +"\">" ;
+	QString preFilter  = "<font face=\"courier\" size=2 color=\"" + prefilterColor + "\">" ;
 
 	QString post   = "</font>";
 	QString logText;
@@ -647,7 +657,7 @@ void LayerDialog::updateTable(const MLSceneGLSharedDataContext::PerMeshRendering
 	updateProjectName(md->docLabel());
 
 	QList<QTreeWidgetItem*> itms;
-	foreach(MeshModel* mmd, md->meshList)
+	for (MeshModel* mmd : md->meshList)
 	{
 		//Restore mesh visibility according to the current visibility map
 		//very good to keep viewer state consistent
@@ -893,7 +903,7 @@ void LayerDialog::updateDecoratorParsView()
 	ui->decParsTree->clear();
 	for(int ii = 0; ii < decList.size();++ii)
 	{
-		MeshDecorateInterface* decPlug =  qobject_cast<MeshDecorateInterface *>(decList[ii]->parent());
+		DecoratePluginInterface* decPlug =  qobject_cast<DecoratePluginInterface *>(decList[ii]->parent());
 		if (!decPlug)
 		{
 			mw->GLA()->Log(GLLogStream::SYSTEM,"MeshLab System Error: A Decorator Plugin has been expected.");
@@ -925,35 +935,19 @@ void LayerDialog::updateDecoratorParsView()
 void LayerDialog::updatePerMeshItemSelectionStatus()
 {
 	MeshDocument* md = mw->meshDoc();
-	if (md == NULL)
+	if (md == nullptr)
 		return;
-	for(int ii = 0; ii < ui->meshTreeWidget->topLevelItemCount();++ii)
-	{
-		MeshTreeWidgetItem* item = dynamic_cast<MeshTreeWidgetItem*>(ui->meshTreeWidget->topLevelItem(ii));
-		MeshModel* mm = md->mm();
-		if ((item != NULL) && (mm != NULL))
-		{
-			if(item->_meshid == mm->id())
-			{
-				item->setBackground(1,QBrush(Qt::yellow));
-				item->setForeground(1,QBrush(Qt::blue));
-				item->setBackground(2,QBrush(Qt::yellow));
-				item->setForeground(2,QBrush(Qt::blue));
-				item->setBackground(3,QBrush(Qt::yellow));
-				item->setForeground(3,QBrush(Qt::blue));
-				ui->meshTreeWidget->setCurrentItem(item);
-				_tabw->updatePerMeshRenderingAction(item->_rendertoolbar->getRenderingActions());
-				_renderingtabcontainer->setTitle(mm->label());
-				updateDecoratorParsView();
-			}
-			else
-			{
-				item->setBackground(1,QBrush());
-				item->setForeground(1,QBrush());
-				item->setBackground(2,QBrush());
-				item->setForeground(2,QBrush());
-				item->setBackground(3,QBrush());
-				item->setForeground(3,QBrush());
+	MeshModel* mm = md->mm();
+	if (mm != nullptr) {
+		for(int ii = 0; ii < ui->meshTreeWidget->topLevelItemCount();++ii) {
+			MeshTreeWidgetItem* item = dynamic_cast<MeshTreeWidgetItem*>(ui->meshTreeWidget->topLevelItem(ii));
+			if ((item != NULL)) {
+				if(item->_meshid == mm->id()) {
+					ui->meshTreeWidget->setCurrentItem(item);
+					_tabw->updatePerMeshRenderingAction(item->_rendertoolbar->getRenderingActions());
+					_renderingtabcontainer->setTitle(mm->label());
+					updateDecoratorParsView();
+				}
 			}
 		}
 	}
@@ -1219,12 +1213,12 @@ void RasterTreeWidgetItem::updateVisibilityIcon( bool isvisible )
 DecoratorParamsTreeWidget::DecoratorParamsTreeWidget(QAction* act,MainWindow *mw,QWidget* parent) :
 	QFrame(parent),mainWin(mw),frame(NULL),savebut(NULL),resetbut(NULL),loadbut(NULL),dialoglayout(NULL)
 {
-	MeshDecorateInterface* decPlug =  qobject_cast<MeshDecorateInterface *>(act->parent());
+	DecoratePluginInterface* decPlug =  qobject_cast<DecoratePluginInterface *>(act->parent());
 	if (!decPlug) {
 		mw->GLA()->Log(GLLogStream::SYSTEM, "MeshLab System Error: A Decorator Plugin has been expected.");
 	}
 	else {
-		decPlug->initGlobalParameterSet(act,tmpSet);
+		decPlug->initGlobalParameterList(act,tmpSet);
 		if (tmpSet.size() != 0) {
 			const RichParameterList& currSet = mw->currentGlobalPars();
 			RichParameterList defSet = tmpSet;

@@ -22,7 +22,6 @@
 ****************************************************************************/
 
 #include "cleanfilter.h"
-#include "align_tools.h"
 
 #include <vcg/complex/algorithms/clean.h>
 #include <vcg/complex/algorithms/create/platonic.h>
@@ -37,7 +36,7 @@ int SnapVertexBorder(CMeshO &m, float threshold,vcg::CallBackPos * cb);
 
 CleanFilter::CleanFilter()
 {
-  typeList
+	typeList
 	<< FP_BALL_PIVOTING
 	<< FP_REMOVE_WRT_Q
 	<< FP_REMOVE_ISOLATED_COMPLEXITY
@@ -54,14 +53,13 @@ CleanFilter::CleanFilter()
 	<< FP_REMOVE_DUPLICATED_VERTEX
 	<< FP_REMOVE_FACE_ZERO_AREA
 	<< FP_MERGE_CLOSE_VERTEX
-    << FP_MERGE_WEDGE_TEX
+	<< FP_MERGE_WEDGE_TEX
 	<< FP_COMPACT_FACE
 	<< FP_COMPACT_VERT;
 
-  FilterIDType tt;
-  foreach(tt , types())
-        actionList << new QAction(filterName(tt), this);
-  AC(FP_SNAP_MISMATCHED_BORDER)->setShortcut(QKeySequence("ALT+`"));
+	for(FilterIDType tt : types())
+		actionList << new QAction(filterName(tt), this);
+	getFilterAction(FP_SNAP_MISMATCHED_BORDER)->setShortcut(QKeySequence("ALT+`"));
 }
 
 CleanFilter::~CleanFilter() {
@@ -139,7 +137,7 @@ QString CleanFilter::filterName(FilterIDType filter) const
   return QString("error!");
 }
 
- CleanFilter::FilterClass CleanFilter::getClass(QAction *a)
+ CleanFilter::FilterClass CleanFilter::getClass(const QAction *a) const
 {
 	switch(ID(a))
 	{
@@ -159,15 +157,15 @@ QString CleanFilter::filterName(FilterIDType filter) const
 		case FP_REMOVE_UNREFERENCED_VERTEX:
 		case FP_REMOVE_DUPLICATED_VERTEX:
 		case FP_COMPACT_VERT:
-		case FP_COMPACT_FACE:                 return MeshFilterInterface::Cleaning;
-		case FP_BALL_PIVOTING: 	              return MeshFilterInterface::Remeshing;
-		case FP_MERGE_WEDGE_TEX: 	          return MeshFilterInterface::FilterClass(MeshFilterInterface::Cleaning + MeshFilterInterface::Texture);    
+		case FP_COMPACT_FACE:                 return FilterPluginInterface::Cleaning;
+		case FP_BALL_PIVOTING: 	              return FilterPluginInterface::Remeshing;
+		case FP_MERGE_WEDGE_TEX: 	          return FilterPluginInterface::FilterClass(FilterPluginInterface::Cleaning + FilterPluginInterface::Texture);    
 		default : assert(0);
 	}
-	return MeshFilterInterface::Generic;
+	return FilterPluginInterface::Generic;
 }
 
-int CleanFilter::getRequirements(QAction *action)
+int CleanFilter::getRequirements(const QAction *action)
 {
 	switch(ID(action))
 	{
@@ -195,7 +193,7 @@ int CleanFilter::getRequirements(QAction *action)
 	return 0;
 }
  
-int CleanFilter::postCondition(QAction* action) const
+int CleanFilter::postCondition(const QAction* action) const
 {
 	switch (ID(action))
 	{
@@ -222,7 +220,7 @@ int CleanFilter::postCondition(QAction* action) const
 	return MeshModel::MM_ALL;
 }
 
-void CleanFilter::initParameterSet(QAction *action,MeshDocument &md, RichParameterList & parlst)
+void CleanFilter::initParameterList(const QAction *action,MeshDocument &md, RichParameterList & parlst)
 {
     pair<float,float> qualityRange;
   switch(ID(action))
@@ -269,7 +267,7 @@ void CleanFilter::initParameterSet(QAction *action,MeshDocument &md, RichParamet
   }
 }
 
-bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & par, vcg::CallBackPos * cb)
+bool CleanFilter::applyFilter(const QAction *filter, MeshDocument &md, std::map<std::string, QVariant>&, unsigned int& /*postConditionMask*/, const RichParameterList & par, vcg::CallBackPos * cb)
 {
  MeshModel &m=*(md.mm());
  switch(ID(filter))
@@ -291,18 +289,18 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
 		// the main processing
 		pivot.BuildMesh(cb);
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
-		Log("Reconstructed surface. Added %i faces",m.cm.fn-startingFn);
+		log("Reconstructed surface. Added %i faces",m.cm.fn-startingFn);
 	} break;
 
 	case FP_REMOVE_ISOLATED_DIAMETER:
 	{
 		float minCC= par.getAbsPerc("MinComponentDiag");
 		std::pair<int,int> delInfo= tri::Clean<CMeshO>::RemoveSmallConnectedComponentsDiameter(m.cm,minCC);
-		Log("Removed %i connected components out of %i", delInfo.second, delInfo.first);
+		log("Removed %i connected components out of %i", delInfo.second, delInfo.first);
 		if (par.getBool("removeUnref"))
 		{
 			int delvert = tri::Clean<CMeshO>::RemoveUnreferencedVertex(m.cm);
-			Log("Removed %d unreferenced vertices", delvert);
+			log("Removed %d unreferenced vertices", delvert);
 		}
 		m.UpdateBoxAndNormals();
     }break;
@@ -310,11 +308,11 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
 	{
 		float minCC= par.getInt("MinComponentSize");
 		std::pair<int,int> delInfo=tri::Clean<CMeshO>::RemoveSmallConnectedComponentsSize(m.cm,minCC);
-		Log("Removed %i connected components out of %i", delInfo.second, delInfo.first);
+		log("Removed %i connected components out of %i", delInfo.second, delInfo.first);
 		if (par.getBool("removeUnref"))
 		{
 			int delvert = tri::Clean<CMeshO>::RemoveUnreferencedVertex(m.cm);
-			Log("Removed %d unreferenced vertices", delvert);
+			log("Removed %d unreferenced vertices", delvert);
 		}
 		m.UpdateBoxAndNormals();
 	} break;
@@ -341,7 +339,7 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
 			}
 
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
-		Log("Deleted %i vertices and %i faces with a quality lower than %f", deletedVN,deletedFN,val);
+		log("Deleted %i vertices and %i faces with a quality lower than %f", deletedVN,deletedFN,val);
 		m.UpdateBoxAndNormals();
 	} break;
 
@@ -350,15 +348,20 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
 		float threshold = par.getFloat("Threshold");
 		bool repeat = par.getBool("Repeat");
 		int total = tri::Clean<CMeshO>::RemoveTVertexByCollapse(m.cm, threshold, repeat);
-		Log("Successfully removed %d t-vertices", total);
+		log("Successfully removed %d t-vertices", total);
     } break;
 
 	case FP_REMOVE_TVERTEX_FLIP :
     {
+		if (vcg::tri::Clean<CMeshO>::CountNonManifoldEdgeFF(m.cm) > 0 || 
+				vcg::tri::Clean<CMeshO>::CountNonManifoldVertexFF(m.cm) > 0){
+			errorMessage = "Non manifold mesh. Please clean the mesh first.";
+			return false;
+		}
 		float threshold = par.getFloat("Threshold");
 		bool repeat = par.getBool("Repeat");
 		int total = tri::Clean<CMeshO>::RemoveTVertexByFlip(m.cm, threshold, repeat);
-		Log("Successfully removed %d t-vertices", total);
+		log("Successfully removed %d t-vertices", total);
     } break;
 
 	case FP_MERGE_WEDGE_TEX :
@@ -366,41 +369,41 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
       float threshold = par.getFloat("MergeThr");
       tri::UpdateTopology<CMeshO>::VertexFace(m.cm);
       int total = tri::UpdateTexture<CMeshO>::WedgeTexMergeClose(m.cm, threshold);
-      Log("Successfully merged %d wedge tex coord distant less than %f", total,threshold);
+      log("Successfully merged %d wedge tex coord distant less than %f", total,threshold);
     } break;
    
     case FP_MERGE_CLOSE_VERTEX :
 	{
 		float threshold = par.getAbsPerc("Threshold");
 		int total = tri::Clean<CMeshO>::MergeCloseVertex(m.cm, threshold);
-		Log("Successfully merged %d vertices", total);
+		log("Successfully merged %d vertices", total);
 	} break;
 
 	case FP_REMOVE_DUPLICATE_FACE :
 	{
 		int total = tri::Clean<CMeshO>::RemoveDuplicateFace(m.cm);
-		Log("Successfully deleted %d duplicated faces", total);
+		log("Successfully deleted %d duplicated faces", total);
 	} break;
 
 	case FP_REMOVE_FOLD_FACE:
 	{
 		m.updateDataMask(MeshModel::MM_FACECOLOR);
 		int total = tri::Clean<CMeshO>::RemoveFaceFoldByFlip(m.cm);
-		Log("Successfully flipped %d folded faces", total);
+		log("Successfully flipped %d folded faces", total);
 		m.UpdateBoxAndNormals();
 	} break;
 
 	case FP_REMOVE_NON_MANIF_EDGE :
 	{
 		int total = tri::Clean<CMeshO>::RemoveNonManifoldFace(m.cm);
-		Log("Successfully removed %d non-manifold faces", total);
+		log("Successfully removed %d non-manifold faces", total);
 		m.UpdateBoxAndNormals();
 	} break;
 
 	 case FP_REMOVE_NON_MANIF_EDGE_SPLIT :
 	 {
 		 int total = tri::Clean<CMeshO>::SplitManifoldComponents(m.cm);
-		 Log("Successfully split the mesh into %d edge manifold components", total);
+		 log("Successfully split the mesh into %d edge manifold components", total);
 		 m.UpdateBoxAndNormals();
 	 } break;
 
@@ -408,28 +411,28 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
 	{
 		float threshold = par.getFloat("VertDispRatio");
 		int total = tri::Clean<CMeshO>::SplitNonManifoldVertex(m.cm,threshold);
-		Log("Successfully split %d non manifold vertices faces", total);
+		log("Successfully split %d non manifold vertices faces", total);
 		m.UpdateBoxAndNormals();
 	} break;
 
 	case FP_REMOVE_FACE_ZERO_AREA:
 	{
 		int nullFaces = tri::Clean<CMeshO>::RemoveFaceOutOfRangeArea(m.cm, 0);
-		Log("Removed %d null faces", nullFaces);
+		log("Removed %d null faces", nullFaces);
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
 	} break;
 
 	case FP_REMOVE_UNREFERENCED_VERTEX:
 	{
 		int delvert = tri::Clean<CMeshO>::RemoveUnreferencedVertex(m.cm);
-		Log("Removed %d unreferenced vertices", delvert);
+		log("Removed %d unreferenced vertices", delvert);
 		if (delvert != 0) m.UpdateBoxAndNormals();
 	} break;
 
 	case FP_REMOVE_DUPLICATED_VERTEX:
 	{
 		int delvert = tri::Clean<CMeshO>::RemoveDuplicateVertex(m.cm);
-		Log("Removed %d duplicated vertices", delvert);
+		log("Removed %d duplicated vertices", delvert);
 		if (delvert != 0) m.UpdateBoxAndNormals();
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
 		m.clearDataMask(MeshModel::MM_VERTFACETOPO);
@@ -439,7 +442,7 @@ bool CleanFilter::applyFilter(QAction *filter, MeshDocument &md, const RichParam
 	{
 		float threshold = par.getFloat("EdgeDistRatio");
 		int total = SnapVertexBorder(m.cm, threshold,cb);
-		Log("Successfully Split %d faces to snap", total);
+		log("Successfully Split %d faces to snap", total);
 		m.clearDataMask(MeshModel::MM_FACEFACETOPO);
 		m.clearDataMask(MeshModel::MM_VERTFACETOPO);
 	} break;

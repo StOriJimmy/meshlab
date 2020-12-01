@@ -148,10 +148,10 @@ QString PDBIOPlugin::pluginName() const
 	return "IOPDB";
 }
 
-QList<MeshIOInterface::Format> PDBIOPlugin::importFormats() const
+QList<FileFormat> PDBIOPlugin::importFormats() const
 {
-	QList<Format> formatList;
-	formatList << Format("Protein Data Bank"	, tr("PDB"));
+	QList<FileFormat> formatList;
+	formatList << FileFormat("Protein Data Bank"	, tr("PDB"));
 
 	return formatList;
 }
@@ -159,9 +159,9 @@ QList<MeshIOInterface::Format> PDBIOPlugin::importFormats() const
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> PDBIOPlugin::exportFormats() const
+QList<FileFormat> PDBIOPlugin::exportFormats() const
 {
-	QList<Format> formatList;
+	QList<FileFormat> formatList;
 //	formatList << Format("Stanford Polygon File Format"	, tr("PLY"));
 
 	return formatList;
@@ -171,7 +171,7 @@ QList<MeshIOInterface::Format> PDBIOPlugin::exportFormats() const
 	returns the mask on the basis of the file's type. 
 	otherwise it returns 0 if the file format is unknown
 */
-void PDBIOPlugin::GetExportMaskCapability(QString & /*format*/, int &capability, int &defaultBits) const
+void PDBIOPlugin::GetExportMaskCapability(const QString & /*format*/, int &capability, int &defaultBits) const
 {
   capability=defaultBits=0;
 	return;

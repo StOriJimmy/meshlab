@@ -26,7 +26,7 @@
 
 #include<QString>
 #include <vcg/space/color4.h>
-#include <common/filter_parameter/rich_parameter_list.h>
+#include <common/parameters/rich_parameter_list.h>
 
 class GLAreaSetting
 {
@@ -71,7 +71,7 @@ public:
 
 
 	void updateGlobalParameterSet(const RichParameterList& rps );
-	static void initGlobalParameterSet( RichParameterList * defaultGlobalParamSet);
+	static void initGlobalParameterList( RichParameterList * defaultGlobalParamSet);
 
 	const RichParameterList *currentGlobalParamSet;
 };

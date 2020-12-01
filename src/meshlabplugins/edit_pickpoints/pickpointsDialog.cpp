@@ -29,7 +29,7 @@
 #include <QFileDialog>
 #include <math.h>
 
-#include <common/meshmodel.h>
+#include <common/ml_document/mesh_model.h>
 #include <meshlab/rich_parameter_gui/richparameterlistframe.h>
 #include <meshlab/rich_parameter_gui/richparameterlistdialog.h>
 
@@ -40,6 +40,8 @@
 #include <vcg/complex/algorithms/closest.h>
 
 #include <QGLWidget>
+#include <QDebug>
+#include <QMessageBox>
 
 using namespace vcg;
 

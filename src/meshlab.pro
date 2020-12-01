@@ -22,14 +22,14 @@ message("DISTRIB_DIRECTORY: "$$MESHLAB_DISTRIB_DIRECTORY)
 
 #the following sub projects are compiled ALSO with MeshLab Mini
 SUBDIRS = \ #sub projects names
-    external \
-    common \
-    meshlab \
-    meshlabserver \
-    io_base \        # a few basic file formats (ply, obj, off), without this you cannot open anything
-    decorate_base \
-    filter_measure \
-    filter_meshing
+	external \
+	common \
+	meshlab \
+	meshlabserver \
+	io_base \ # a few basic file formats (ply, obj, off), without this you cannot open anything
+	decorate_base \
+	filter_measure \
+	filter_meshing
 
 !meshlab_mini {
 # Other sub project, compiled only when config is not MeshLab Mini
@@ -38,81 +38,85 @@ SUBDIRS = \ #sub projects names
 # meshlab_mini SUBDIRS
 SUBDIRS += \ #sub projects names
 # IO plugins
-    io_3ds \
-    io_bre \
-    io_collada \
-    io_ctm \
-    io_expe \
-    io_json \
-    io_tri \
-    io_x3d \
-    io_pdb \
-    io_txt \
-    io_u3d \
+	io_3ds \
+	io_bre \
+	io_collada \
+	io_ctm \
+	io_expe \
+	io_json \
+	io_tri \
+	io_x3d \
+	io_pdb \
+	io_txt \
+	io_u3d \
+	ioraster_base \
 # Filter samples
-    edit_sample \
-    filter_sample \
-    filter_sample_dyn \
-    filter_createiso \
-    filter_geodesic \
-    filter_sample_gpu \
+	edit_sample \
+	filter_sample \
+	filter_sample_dyn \
+	filter_createiso \
+	filter_geodesic \
+	filter_sample_gpu \
 # Filter plugins
-    filter_ao \
-    filter_camera \
-    filter_clean \
-    filter_color_projection \
-    filter_colorproc \
-    filter_create \
-    filter_csg \
-    filter_dirt \
-    filter_fractal \
-    filter_func \
-    filter_globalregistration \
-    filter_img_patch_param \
-    filter_isoparametrization \
-    filter_layer \
-    filter_mls \
-    filter_mutualglobal \
-    filter_mutualinfo \
-    filter_plymc \
-    filter_qhull \
-    filter_quality \
-    filter_sampling \
-    filter_screened_poisson \
-    filter_sdfgpu \
-    filter_select \
-    filter_sketchfab \
-    filter_ssynth \
-    filter_texture \
-    filter_trioptimize \
-    filter_unsharp \
-    filter_voronoi \
+	filter_ao \
+	filter_camera \
+	filter_clean \
+	filter_color_projection \
+	filter_colorproc \
+	filter_create \
+	filter_dirt \
+	filter_fractal \
+	filter_func \
+	filter_globalregistration \
+	filter_img_patch_param \
+	filter_isoparametrization \
+	filter_layer \
+	filter_mls \
+	filter_mutualglobal \
+	filter_mutualinfo \
+	filter_plymc \
+	filter_qhull \
+	filter_quality \
+	filter_sampling \
+	filter_screened_poisson \
+	filter_sdfgpu \
+	filter_select \
+	filter_sketchfab \
+	filter_ssynth \
+	filter_texture \
+	filter_trioptimize \
+	filter_unsharp \
+	filter_voronoi \
 # Rendering and Decoration Plugins
-    decorate_background \
-    decorate_raster_proj \
-    decorate_shadow \
-    render_gdp \
-    render_radiance_scaling \
+	decorate_background \
+	decorate_raster_proj \
+	decorate_shadow \
+	render_gdp \
+	render_radiance_scaling \
 # Edit Plugins
-    edit_align \
-    edit_manipulators \
-    edit_measure \
-    edit_mutualcorrs \
-    edit_paint \
-    edit_point \
-    edit_referencing \
-    edit_quality \
-    edit_select \
-    edit_pickpoints
+	edit_align \
+	edit_manipulators \
+	edit_measure \
+	edit_mutualcorrs \
+	edit_paint \
+	edit_point \
+	edit_referencing \
+	edit_quality \
+	edit_select \
+	edit_pickpoints
 
 }
+linux{
+	SUBDIRS += \
+		filter_csg #filter_csg is supported only on linux with qmake
+}
 meshlab_mini {
-    message(Compiling only MeshLab Mini!)
+	message(Compiling only MeshLab Mini!)
 }
 
 win32 {
-    SUBDIRS+= \
-        use_cpu_opengl
+	SUBDIRS+= \
+		use_cpu_opengl
 }
 
 ## where to find the sub projects - give the folders ##
@@ -138,6 +142,7 @@ io_x3d.subdir = meshlabplugins/io_x3d
 io_pdb.subdir = meshlabplugins/io_pdb
 io_txt.subdir = meshlabplugins/io_txt
 io_u3d.subdir = meshlabplugins/io_u3d
+ioraster_base.subdir = meshlabplugins/ioraster_base
 # Filter samples
 edit_sample.subdir = meshlabplugins/edit_sample
 filter_sample.subdir = meshlabplugins/filter_sample
@@ -196,7 +201,7 @@ edit_pickpoints.subdir = meshlabplugins/edit_pickpoints
 
 ## what subproject depends on others ##
 # meshlab_mini subdirs
-common.depends = external
+#common.depends = external
 meshlab.depends = common
 meshlabserver.depends = common
 io_base.depends = common
@@ -204,17 +209,18 @@ decorate_base.depends = common
 filter_measure.depends = common
 filter_meshing.depends = common
 # IO plugins
-io_3ds.depends = common
+io_3ds.depends = common external
 io_bre.depends = common
 io_collada.depends = common
-io_ctm.depends = common
+io_ctm.depends = common external
 io_expe.depends = common
 io_json.depends = common
-io_tri.depends = common
-io_x3d.depends = common
 io_pdb.depends = common
+io_tri.depends = common
 io_txt.depends = common
-io_u3d.depends = common
+io_u3d.depends = common external
+io_x3d.depends = common
+ioraster_base.depends = common
 # Filter samples
 edit_sample.depends = common
 filter_sample.depends = common
@@ -229,26 +235,26 @@ filter_clean.depends = common
 filter_color_projection.depends = common
 filter_colorproc.depends = common
 filter_create.depends = common
-filter_csg.depends = common
+filter_csg.depends = common external
 filter_dirt.depends = common
 filter_fractal.depends = common
-filter_func.depends = common
+filter_func.depends = common external
 filter_globalregistration.depends = common
 filter_img_patch_param.depends = common
-filter_isoparametrization.depends = common
+filter_isoparametrization.depends = common external
 filter_layer.depends = common
 filter_mls.depends = common
 filter_mutualglobal.depends = common
 filter_mutualinfo.depends = common
 filter_plymc.depends = common
-filter_qhull.depends = common
+filter_qhull.depends = common external
 filter_quality.depends = common
 filter_sampling.depends = common
 filter_screened_poisson.depends = common
 filter_sdfgpu.depends = common
 filter_select.depends = common
 filter_sketchfab.depends = common
-filter_ssynth.depends = common
+filter_ssynth.depends = common external
 filter_texture.depends = common
 filter_trioptimize.depends = common
 filter_unsharp.depends = common
@@ -263,7 +269,7 @@ render_radiance_scaling.depends = common
 edit_align.depends = common
 edit_manipulators.depends = common
 edit_measure.depends = common
-edit_mutualcorrs.depends = common
+edit_mutualcorrs.depends = common external
 edit_paint.depends = common
 edit_point.depends = common
 edit_referencing.depends = common
@@ -271,23 +277,18 @@ edit_quality.depends = common
 edit_select.depends = common
 edit_pickpoints.depends = common
 
-#no longer needed# meshlabplugins/filter_aging \
-#no longer needed# meshlabplugins/filter_bnpts \
-#no longer needed# meshlabplugins/filter_colorize \
-
-
 # if distrib folder is not in $$PWD/../distrib (shadow build case),
 # we need to copy all the files inside $$PWD/../distrib in the actual
 # distrib folder ($$OUT_PWD/distrib or $$MESHLAB_DISTRIB_DIRECTORY)
 !equals(PWD, $$OUT_PWD) : !equals(PWD, $$OUT_PWD/src) {
-    #copying the "lib" folder inside the $$OUT_PWD/distrib
-    win32:copydir.commands = $(COPY_DIR) \"$$shell_path($$PWD/../distrib)\" \"$$shell_path($$OUT_PWD/distrib)\"
-    !win32:copydir.commands = $(COPY_DIR) \"$$shell_path($$PWD/../distrib)\" \"$$shell_path($$OUT_PWD)\"
-    first.depends += $(first) copydir
-    export(first.depends)
-    export(copydir.commands)
+	#copying the "shaders" folder inside the $$OUT_PWD/distrib
+	!win32:copydir.commands = $(COPY_DIR) \"$$shell_path($$PWD/../distrib/shaders/)\" \"$$shell_path($$OUT_PWD/distrib/)\"
+	win32:copydir.commands = $(COPY_DIR) \"$$shell_path($$PWD/../distrib/shaders)\" \"$$shell_path($$OUT_PWD/distrib/)\"
+	first.depends += $(first) copydir
+	export(first.depends)
+	export(copydir.commands)
 
-    QMAKE_EXTRA_TARGETS += first copydir
+	QMAKE_EXTRA_TARGETS += first copydir
 }
 
 #
@@ -299,20 +300,20 @@ edit_pickpoints.depends = common
 #
 include(find_system_libs.pri)
 system_eigen3 {
-    message("Using system eigen3")
+	message("Using system eigen3")
 }
 system_glew {
-    message("Using system glew")
+	message("Using system glew")
 }
 system_openctm {
-    message("Using system openctm")
+	message("Using system openctm")
 }
 system_lib3ds {
-    message("Using system lib3ds")
+	message("Using system lib3ds")
 }
 system_muparser {
-    message("Using system muparser")
+	message("Using system muparser")
 }
 system_qhull {
-    message("Using system qhull")
+	message("Using system qhull")
 }

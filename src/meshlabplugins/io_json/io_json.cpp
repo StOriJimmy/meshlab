@@ -30,7 +30,7 @@
 #include <QString>
 #include <QFile>
 
-JSONIOPlugin::JSONIOPlugin(void) : MeshIOInterface()
+JSONIOPlugin::JSONIOPlugin(void) : IOMeshPluginInterface()
 {
 	;
 }
@@ -45,7 +45,7 @@ QString JSONIOPlugin::pluginName() const
 	return "IOJson";
 }
 
-bool JSONIOPlugin::open(const QString & formatName, const QString & fileName, MeshModel & m, int & mask, const RichParameterList & parlst, vcg::CallBackPos * cb, QWidget * parent)
+bool JSONIOPlugin::open(const QString & formatName, const QString & fileName, MeshModel & m, int & mask, const RichParameterList & parlst, vcg::CallBackPos * cb, QWidget * /*parent*/)
 {
 	(void)formatName;
 	(void)fileName;
@@ -53,7 +53,6 @@ bool JSONIOPlugin::open(const QString & formatName, const QString & fileName, Me
 	(void)mask;
 	(void)parlst;
 	(void)cb;
-	(void)parent;
 
 	return false;
 }
@@ -426,9 +425,9 @@ bool JSONIOPlugin::save(const QString & formatName,const QString & fileName, Mes
 /*
 	returns the list of the file's type which can be imported
 */
-QList<MeshIOInterface::Format> JSONIOPlugin::importFormats(void) const
+QList<FileFormat> JSONIOPlugin::importFormats(void) const
 {
-	QList<Format> formatList;
+	QList<FileFormat> formatList;
 	//formatList << Format("JavaScript JSON", tr("JSON"));
 	return formatList;
 }
@@ -436,10 +435,10 @@ QList<MeshIOInterface::Format> JSONIOPlugin::importFormats(void) const
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> JSONIOPlugin::exportFormats(void) const
+QList<FileFormat> JSONIOPlugin::exportFormats(void) const
 {
-	QList<Format> formatList;
-	formatList << Format("JavaScript JSON", tr("JSON"));
+	QList<FileFormat> formatList;
+	formatList << FileFormat("JavaScript JSON", tr("JSON"));
 	return formatList;
 }
 
@@ -447,7 +446,7 @@ QList<MeshIOInterface::Format> JSONIOPlugin::exportFormats(void) const
 	returns the mask on the basis of the file's type.
 	otherwise it returns 0 if the file format is unknown
 */
-void JSONIOPlugin::GetExportMaskCapability(QString & format, int & capability, int & defaultBits) const
+void JSONIOPlugin::GetExportMaskCapability(const QString & format, int & capability, int & defaultBits) const
 {
 	capability = 0;
 

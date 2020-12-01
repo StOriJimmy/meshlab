@@ -24,13 +24,12 @@
 #include <common/GLExtensionsManager.h>
 #include <common/mlapplication.h>
 #include <common/mlexception.h>
-#include <common/interfaces.h>
 #include <common/pluginmanager.h>
 #include <common/filterscript.h>
 #include <common/meshlabdocumentxml.h>
 #include <common/meshlabdocumentbundler.h>
 #include <common/mlexception.h>
-#include <common/filter_parameter/rich_parameter_list.h>
+#include <common/parameters/rich_parameter_list.h>
 #include <wrap/qt/qt_thread_safe_memory_info.h>
 #include <wrap/io_trimesh/alnParser.h>
 
@@ -38,6 +37,8 @@
 
 #include <QGLFormat>
 #include <QFileInfo>
+#include <QElapsedTimer>
+#include <QSettings>
 
 
 class FilterData
@@ -53,12 +54,12 @@ public:
 class MeshLabServer
 {
 public:
-    MeshLabServer(MLSceneGLSharedDataContext* shar) 
+    MeshLabServer(MLSceneGLSharedDataContext* shar)
 		:shared(shar)
 	{
 	}
 
-    ~MeshLabServer() 
+    ~MeshLabServer()
 	{
 	}
 
@@ -89,7 +90,7 @@ public:
     void dumpPluginInfoWiki(FILE *fp)
     {
         if(!fp) return;
-        foreach(MeshFilterInterface *iFilter, PM.meshFilterPlugins())
+        foreach(FilterPluginInterface *iFilter, PM.meshFilterPlugins())
             foreach(QAction *filterAction, iFilter->actions())
             fprintf(fp, "*<b><i>%s</i></b> <br>%s<br>\n", qUtf8Printable(filterAction->text()), qUtf8Printable(iFilter->filterInfo(filterAction)));
     }
@@ -102,7 +103,7 @@ public:
         fprintf(fp,"/*! \\mainpage MeshLab Filter Documentation\n");
         //fprintf(fp,"\\AtBeginDocument{\\setcounter{tocdepth}{1}}");
 
-        foreach(MeshFilterInterface *iFilter, PM.meshFilterPlugins())
+        foreach(FilterPluginInterface *iFilter, PM.meshFilterPlugins())
         {
             foreach(QAction *filterAction, iFilter->actions())
             {
@@ -138,7 +139,7 @@ public:
 
         // HashTable storing all supported formats together with
         // the (1-based) index  of first plugin which is able to open it
-        QHash<QString, MeshIOInterface*> allKnownFormats;
+        QHash<QString, IOMeshPluginInterface*> allKnownFormats;
 
         //PM.LoadFormats(filters, allKnownFormats,PluginManager::IMPORT);
 
@@ -150,7 +151,7 @@ public:
         QString extension = fi.suffix();
         qDebug("Opening a file with extension %s", qUtf8Printable(extension));
         // retrieving corresponding IO plugin
-        MeshIOInterface* pCurrentIOPlugin = PM.allKnowInputFormats[extension.toLower()];
+        IOMeshPluginInterface* pCurrentIOPlugin = PM.allKnowInputMeshFormats[extension.toLower()];
         if (pCurrentIOPlugin == 0)
         {
             fprintf(fp,"Error encountered while opening file: ");
@@ -215,7 +216,7 @@ public:
         QString extension = fi.suffix();
 
         // retrieving corresponding IO plugin
-        MeshIOInterface* pCurrentIOPlugin = PM.allKnowOutputFormats[extension.toLower()];
+        IOMeshPluginInterface* pCurrentIOPlugin = PM.allKnowOutputFormats[extension.toLower()];
         if (pCurrentIOPlugin == 0)
         {
             fprintf(fp,"Error encountered while opening file: ");
@@ -231,7 +232,7 @@ public:
         if(savePar.hasParameter("Binary")){
             savePar.setValue("Binary",BoolValue(writebinary));
         }
-        
+
         int formatmask = 0;
         int defbits = 0;
         pCurrentIOPlugin->GetExportMaskCapability(extension,formatmask,defbits);
@@ -245,7 +246,7 @@ public:
         return true;
     }
 
-    bool loadMesh(const QString& fileName, MeshIOInterface *pCurrentIOPlugin, MeshModel* mm, int& mask,RichParameterList* prePar, const Matrix44m &mtr, MeshDocument* md, FILE* fp = stdout)
+    bool loadMesh(const QString& fileName, IOMeshPluginInterface *pCurrentIOPlugin, MeshModel* mm, int& mask,RichParameterList* prePar, const Matrix44m &mtr, MeshDocument* md, FILE* fp = stdout)
     {
         if (mm == NULL)
             return false;
@@ -380,7 +381,7 @@ public:
             mm->Clear();
         QFileInfo fi(fullPath);
         QString extension = fi.suffix();
-        MeshIOInterface *pCurrentIOPlugin = PM.allKnowInputFormats[extension.toLower()];
+        IOMeshPluginInterface *pCurrentIOPlugin = PM.allKnowInputMeshFormats[extension.toLower()];
 
         if(pCurrentIOPlugin != NULL)
         {
@@ -407,7 +408,7 @@ public:
         //showLayerDlg(false);
     	//globrendtoolbar->setEnabled(false);
         if (fileName.isEmpty()) return false;
-    
+
         QFileInfo fi(fileName);
         //lastUsedDirectory = fi.absoluteDir();
         //TODO: move this to main()
@@ -417,23 +418,23 @@ public:
             fprintf(fp, "Meshlab Opening Error: Unknown project file extension\n");
             return false;
         }
-    
+
         // Common Part: init a Doc if necessary, and
         //bool activeDoc = (bool) !mdiarea->subWindowList().empty() && mdiarea->currentSubWindow();
         //bool activeEmpty = activeDoc && md.meshList.empty();
-    
+
         //if (!activeEmpty)  newProject(fileName);
-    
+
         md.setFileName(fileName);
         //mdiarea->currentSubWindow()->setWindowTitle(fileName);
         md.setDocLabel(fileName);
-    
+
         md.setBusy(true);
-    
+
         // this change of dir is needed for subsequent textures/materials loading
         QDir::setCurrent(fi.absoluteDir().absolutePath());
         //qb->show();
-    
+
         if (QString(fi.suffix()).toLower() == "aln")
         {
             std::vector<RangeMap> rmv;
@@ -444,19 +445,19 @@ public:
                 fprintf(fp,"Meshlab Opening Error: Unable to open ALN file\n");
                 return false;
             }
-    
+
             bool openRes=true;
             std::vector<RangeMap>::iterator ir;
             for(ir=rmv.begin();ir!=rmv.end() && openRes;++ir)
             {
                 QString relativeToProj = fi.absoluteDir().absolutePath() + "/" + (*ir).filename.c_str();
                 md.addNewMesh(relativeToProj,relativeToProj);
-                openRes = loadMeshWithStandardParams(relativeToProj,md.mm(),ir->trasformation, &md);
+                openRes = loadMeshWithStandardParams(relativeToProj,md.mm(),ir->transformation, &md);
                 if(!openRes)
                     md.delMesh(md.mm());
             }
         }
-    
+
         if (QString(fi.suffix()).toLower() == "mlp" || QString(fi.suffix()).toLower() == "mlb")
         {
             std::map<int, MLRenderingData> rendOpt;
@@ -476,37 +477,37 @@ public:
                     md.delMesh(md.meshList[i]);
             }
         }
-    
+
         ////// BUNDLER
         if (QString(fi.suffix()).toLower() == "out"){
-    
+
             QString cameras_filename = fileName;
             QString image_list_filename;
             QString model_filename;
-    
+
             image_list_filename = "list.txt";
             if(image_list_filename.isEmpty())
                 return false;
-    
+
             if(!MeshDocumentFromBundler(md,cameras_filename,image_list_filename,model_filename)){
                 //QMessageBox::critical(this, tr("Meshlab Opening Error"), "Unable to open OUTs file");
                 fprintf(fp,"Meshlab Opening Error: Unable to open OUTs file\n");
                 return false;
             }
-    
-    
+
+
     //WARNING!!!!! i suppose it's not useful anymore but.......
     /*GLA()->setColorMode(GLW::CMPerVert);
     GLA()->setDrawMode(GLW::DMPoints);*/
     /////////////////////////////////////////////////////////
         }
-    
+
         //////NVM
         if (QString(fi.suffix()).toLower() == "nvm"){
-    
+
             QString cameras_filename = fileName;
             QString model_filename;
-    
+
             if(!MeshDocumentFromNvm(md,cameras_filename,model_filename)){
                 //QMessageBox::critical(this, tr("Meshlab Opening Error"), "Unable to open NVMs file");
                 fprintf(fp,"Meshlab Opening Error: Unable to open NVMs file\n");
@@ -517,10 +518,10 @@ public:
     GLA()->setDrawMode(GLW::DMPoints);*/
     /////////////////////////////////////////////////////////
         }
-        
+
         md.setBusy(false);
         //qb->reset();
-      
+
         return true;
     }
 
@@ -585,7 +586,7 @@ public:
                 return false;
             }
 
-            MeshFilterInterface *iFilter = qobject_cast<MeshFilterInterface *>(action->parent());
+            FilterPluginInterface *iFilter = qobject_cast<FilterPluginInterface *>(action->parent());
             iFilter->setLog(&log);
             int req = iFilter->getRequirements(action);
             if (mm != NULL)
@@ -596,7 +597,7 @@ public:
             //So we have to ask to the filter the default values for all the parameters and integrate them with the parameters' values
             //defined in the script file.
             RichParameterList required;
-            iFilter->initParameterSet(action,meshDocument,required);
+            iFilter->initParameterList(action,meshDocument,required);
             RichParameterList &parameterSet = pair.second;
 
             //The parameters in the script file are more than the required parameters of the filter. The script file is not correct.
@@ -644,7 +645,7 @@ public:
                 atts[MLRenderingData::ATT_NAMES::ATT_VERTPOSITION] = true;
                 atts[MLRenderingData::ATT_NAMES::ATT_VERTNORMAL] = true;
 
-                if (iFilter->filterArity(action) == MeshFilterInterface::SINGLE_MESH)
+                if (iFilter->filterArity(action) == FilterPluginInterface::SINGLE_MESH)
                 {
                     MLRenderingData::PRIMITIVE_MODALITY pm = MLPoliciesStandAloneFunctions::bestPrimitiveModalityAccordingToMesh(meshDocument.mm());
                     if ((pm != MLRenderingData::PR_ARITY) && (meshDocument.mm() != NULL))
@@ -681,7 +682,9 @@ public:
                 }
             }
             meshDocument.setBusy(true);
-            ret = iFilter->applyFilter( action, meshDocument, pair.second, filterCallBack);
+            unsigned int postConditionMask = MeshModel::MM_UNKNOWN;
+			std::map<std::string, QVariant> outputValues;
+            ret = iFilter->applyFilter( action, meshDocument, outputValues, postConditionMask, pair.second, filterCallBack);
             meshDocument.setBusy(false);
             if (shared != NULL)
                 delete iFilter->glContext;
@@ -756,7 +759,7 @@ namespace commandline
     QString outputmeshExpression()
     {
 		QString options("(" + QString(vertex) + "|" + QString(face) + "|" + QString(wedge) + "|" + QString(mesh) + "|" +QString(saveparam) + ")(" + QString(color) + "|" + QString(quality) + "|" + QString(flags) + "|" + QString(normal) + "|" + QString(radius) + "|" + QString(texture) + "|" + QString(polygon) + "|" + QString(ascii) + ")");
-		QString optionslist(options + "(\\s+" + options + ")*");	
+		QString optionslist(options + "(\\s+" + options + ")*");
 		QString savingmask("-" + QString(mask) + "\\s+" + optionslist);
 		QString layernumber("\\d+");
 		QString layertosave("-" + QString(layer) + "\\s+(" + layernumber + "|" + currentlayer + "|" + lastlayer + ")");
@@ -789,9 +792,9 @@ struct OutFileMesh
     int mask;
     bool writebinary;
 	/*WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-	/* We need these two constant values because when we parse the command line we don't know 
-   * yet how many layers will have the current document and which will be the current one. 
-   * Opening a project and/or importing a file happens after the parsing of the commandline 
+	/* We need these two constant values because when we parse the command line we don't know
+   * yet how many layers will have the current document and which will be the current one.
+   * Opening a project and/or importing a file happens after the parsing of the commandline
    * is completed */
 	static const int lastlayerconst = -2;
 	static const int currentlayerconst = -1;
@@ -800,7 +803,7 @@ struct OutFileMesh
 	// Possible values can be:
 	//	- lastlayerconst #the last layer of a document, DEFAULT value
 	//	- currentlayerconst #the current layer of a document, sometimes it's different from the last layer of a document
-	//	- a number between [0,inf) #identifying the correspondent layer position  
+	//	- a number between [0,inf) #identifying the correspondent layer position
   // WARNING!!!!! Please note that the layer position is DIFFERENT from the layer id
 	int layerposition;
 };
@@ -879,7 +882,7 @@ int main(int argc, char *argv[])
 	MeshLabServer server(&shared);
     server.loadPlugins();
 
-    bool writebinary = true; 
+    bool writebinary = true;
     int i = 1;
     while(i < argc)
     {
@@ -926,7 +929,7 @@ int main(int argc, char *argv[])
                         pr.filename += ".mlp";
                     }
                     ++i;
-					QString overtmp('-'); 
+					QString overtmp('-');
 					overtmp += commandline::overwrite;
                     if (((i + 1) < argc) && (QString(argv[i+1]) == overtmp))
                     {
@@ -1039,7 +1042,7 @@ int main(int argc, char *argv[])
                                 }
                                 break;
                             }
-						
+
                         case commandline::saveparam :
                              {
                                 switch( argv[i][1])
@@ -1149,14 +1152,14 @@ int main(int argc, char *argv[])
 
 	if (meshDocument.size() < outmeshlist.size())
 		fprintf(logfp, "Error: trying to save %i meshes, but only %i available in the project\n", outmeshlist.size(), meshDocument.size());
-	
+
 	for (int ii = 0; ii < outmeshlist.size(); ++ii)
 	{
 		bool exported = false;
 		if (outmeshlist[ii].layerposition < meshDocument.meshList.size())
 		{
 			int layertobesaved = outmeshlist[ii].layerposition;
-			
+
 			if (layertobesaved == OutFileMesh::lastlayerconst)
 				layertobesaved = meshDocument.meshList.size() - 1;
 			else
@@ -1190,4 +1193,3 @@ int main(int argc, char *argv[])
 	//system("pause");
 	return 0;
 }//int main()
-

@@ -23,24 +23,25 @@
 #ifndef BASEIOPLUGIN_H
 #define BASEIOPLUGIN_H
 
-#include <common/interfaces.h>
+#include <common/ml_document/mesh_model.h>
+#include <common/interfaces/iomesh_plugin_interface.h>
 
-class BaseMeshIOPlugin : public QObject, public MeshIOInterface
+class BaseMeshIOPlugin : public QObject, public IOMeshPluginInterface
 {
 	Q_OBJECT
-		MESHLAB_PLUGIN_IID_EXPORTER(MESH_IO_INTERFACE_IID)
-		Q_INTERFACES(MeshIOInterface)
+		MESHLAB_PLUGIN_IID_EXPORTER(IOMESH_PLUGIN_INTERFACE_IID)
+		Q_INTERFACES(IOMeshPluginInterface)
 
 
 public:
 
-	BaseMeshIOPlugin() : MeshIOInterface() {}
+	BaseMeshIOPlugin() : IOMeshPluginInterface() {}
 	QString pluginName() const;
 
-	QList<Format> importFormats() const;
-	QList<Format> exportFormats() const;
+	QList<FileFormat> importFormats() const;
+	QList<FileFormat> exportFormats() const;
 
-	void GetExportMaskCapability(QString &format, int &capability, int &defaultBits) const;
+	void GetExportMaskCapability(const QString& format, int &capability, int &defaultBits) const;
 
 	bool open(const QString &formatName, const QString &fileName, MeshModel &m, int& mask, const RichParameterList & par, vcg::CallBackPos *cb = 0, QWidget *parent = 0);
 	bool save(const QString &formatName, const QString &fileName, MeshModel &m, const int mask, const RichParameterList & par, vcg::CallBackPos *cb = 0, QWidget *parent = 0);
@@ -49,7 +50,6 @@ public:
 	void initPreOpenParameter(const QString &formatName, const QString &filename, RichParameterList &parlst);
 	void initSaveParameter(const QString &format, MeshModel &/*m*/, RichParameterList & par);
 
-	void initGlobalParameterSet(QAction * /*format*/, RichParameterList & /*globalparam*/);
 private:
 	static QString stlUnifyParName() { return QString("MeshLab::IO::STL::UnifyVertices"); }
 };

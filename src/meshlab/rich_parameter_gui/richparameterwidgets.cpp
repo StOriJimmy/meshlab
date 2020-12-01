@@ -1,5 +1,5 @@
 /****************************************************************************
-* VCGLib                                                            o o     *
+* MeshLab                                                           o o     *
 * Visual and Computer Graphics Library                            o     o   *
 *                                                                _   O  _   *
 * Copyright(C) 2004-2020                                           \/)\/    *
@@ -26,6 +26,8 @@
 #include <QColorDialog>
 #include <QClipboard>
 #include <QFileDialog>
+#include <QApplication>
+#include <common/ml_document/mesh_document.h>
 
 /******************************************/
 // MeshLabWidget Implementation
@@ -559,7 +561,7 @@ void Point3fWidget::setValue(QString name,Point3m newVal)
 	}
 }
 
-void Point3fWidget::setShotValue(QString name, vcg::Shotf newValShot)
+void Point3fWidget::setShotValue(QString name, Shotm newValShot)
 {
 	vcg::Point3f p = newValShot.GetViewPoint();
 	setValue(name,p);
@@ -658,7 +660,7 @@ Matrix44fWidget::~Matrix44fWidget()
 {
 }
 
-void Matrix44fWidget::setValue(QString name,Matrix44m newVal)
+void Matrix44fWidget::setValue(QString name, Matrix44m newVal)
 {
 	if(name==paramName)
 	{
@@ -670,13 +672,13 @@ void Matrix44fWidget::setValue(QString name,Matrix44m newVal)
 }
 
 
-vcg::Matrix44f Matrix44fWidget::getValue()
+Matrix44m Matrix44fWidget::getValue()
 {
 	if (!valid) {
-		float val[16];
+		MESHLAB_SCALAR val[16];
 		for (unsigned int i = 0; i < 16; ++i)
 			val[i] = coordSB[i]->text().toFloat();
-		return vcg::Matrix44f(val);
+		return Matrix44m(val);
 	}
 	return m;
 }
@@ -718,7 +720,7 @@ void Matrix44fWidget::pasteMatrix()
 void Matrix44fWidget::collectWidgetValue()
 {
 	if (!valid) {
-		vcg::Matrix44f  tempM;
+		Matrix44m  tempM;
 		for (unsigned int i = 0; i < 16; ++i) tempM[i / 4][i % 4] = coordSB[i]->text().toFloat();
 		rp->setValue(Matrix44fValue(tempM));
 	}
@@ -839,7 +841,7 @@ void ShotfWidget::setShotValue(QString name,Shotm newVal)
 	}
 }
 
-vcg::Shotf ShotfWidget::getValue()
+Shotm ShotfWidget::getValue()
 {
 	return curShot;
 }
@@ -1158,10 +1160,8 @@ void MeshWidget::setWidgetValue( const Value& nv )
 /******************************************/
 
 IOFileWidget::IOFileWidget(QWidget* p, const RichParameter& rpar , const RichParameter& rdef) :
-	RichParameterWidget(p,rpar, rdef), fl()
+	RichParameterWidget(p,rpar, rdef)
 {
-	if (rp != NULL)
-		fl = rp->value().getFileName();
 	filename = new QLineEdit(this);
 	filename->setText(tr(""));
 	browse = new QPushButton(this);
@@ -1188,21 +1188,19 @@ IOFileWidget::~IOFileWidget()
 
 void IOFileWidget::collectWidgetValue()
 {
-	rp->setValue(FileValue(fl));
+	rp->setValue(FileValue(filename->text()));
 }
 
 void IOFileWidget::resetWidgetValue()
 {
 	QString fle = rp->value().getFileName();
-	fl = fle;
 	updateFileName(fle);
 }
 
 void IOFileWidget::setWidgetValue(const Value& nv)
 {
 	QString fle = nv.getFileName();
-	fl = fle;
-	updateFileName(QString());
+	updateFileName(fle);
 }
 
 void IOFileWidget::updateFileName( const FileValue& file )
@@ -1240,7 +1238,7 @@ void SaveFileWidget::selectFile()
 	//SaveFileDecoration* dec = reinterpret_cast<SaveFileDecoration*>(rp->pd);
 	RichSaveFile* dec = reinterpret_cast<RichSaveFile*>(rp);
 	QString ext;
-	fl = QFileDialog::getSaveFileName(this,tr("Save"),rp->value().getFileName(),dec->ext);
+	QString fl = QFileDialog::getSaveFileName(this,tr("Save"),rp->value().getFileName(),dec->ext);
 	collectWidgetValue();
 	updateFileName(fl);
 	FileValue fileName(fl);
@@ -1262,7 +1260,7 @@ void OpenFileWidget::selectFile()
 	//OpenFileDecoration* dec = reinterpret_cast<OpenFileDecoration*>(rp->pd);
 	RichOpenFile* dec = reinterpret_cast<RichOpenFile*>(rp);
 	QString ext;
-	fl = QFileDialog::getOpenFileName(this,tr("Open"),rp->value().getFileName(), dec->exts.join(" "));
+	QString fl = QFileDialog::getOpenFileName(this,tr("Open"),rp->value().getFileName(), dec->exts.join(" "));
 	collectWidgetValue();
 	updateFileName(fl);
 	FileValue fileName(fl);

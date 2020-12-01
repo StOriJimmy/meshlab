@@ -9,7 +9,7 @@ set(SOURCES mainserver.cpp)
 
 set(RESOURCES meshlabserver.qrc)
 
-list(APPEND RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../meshlab/meshlab.qrc)
+#list(APPEND RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../meshlab/meshlab.qrc)
 if(WIN32)
     list(APPEND SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../meshlab/meshlab.rc)
 endif()
@@ -20,7 +20,7 @@ target_compile_definitions(
     meshlabserver PUBLIC QT_DISABLE_DEPRECATED_BEFORE=0x000000
                          NO_XSERVER_DEPENDENCY)
 target_include_directories(meshlabserver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(meshlabserver PUBLIC common Qt5::Network)
+target_link_libraries(meshlabserver PUBLIC meshlab-common Qt5::Network)
 
 set_property(TARGET meshlabserver PROPERTY FOLDER Core)
 
