@@ -71,20 +71,20 @@ QString IOMPlugin::pluginName() const
 	return "IOCTM";
 }
 
-QList<MeshIOInterface::Format> IOMPlugin::importFormats() const
+QList<FileFormat> IOMPlugin::importFormats() const
 {
-	QList<Format> formatList;
-  formatList << Format("OpenCTM compressed format"	,tr("CTM"));
+	QList<FileFormat> formatList;
+  formatList << FileFormat("OpenCTM compressed format"	,tr("CTM"));
 	return formatList;
 }
 
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> IOMPlugin::exportFormats() const
+QList<FileFormat> IOMPlugin::exportFormats() const
 {
-	QList<Format> formatList;
-    formatList << Format("OpenCTM compressed format"	,tr("CTM"));
+	QList<FileFormat> formatList;
+    formatList << FileFormat("OpenCTM compressed format"	,tr("CTM"));
 	return formatList;
 }
 
@@ -92,7 +92,7 @@ QList<MeshIOInterface::Format> IOMPlugin::exportFormats() const
 	returns the mask on the basis of the file's type. 
 	otherwise it returns 0 if the file format is unknown
 */
-void IOMPlugin::GetExportMaskCapability(QString &/*format*/, int &capability, int &defaultBits) const
+void IOMPlugin::GetExportMaskCapability(const QString &/*format*/, int &capability, int &defaultBits) const
 {
   capability=defaultBits=vcg::tri::io::ExporterCTM<CMeshO>::GetExportMaskCapability();
 	return;

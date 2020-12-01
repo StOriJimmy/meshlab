@@ -28,7 +28,7 @@
 #include <gr/algorithms/PointPairFilter.h>
 //#include <QtScript>
 
-using PointType = gr::Point3D<float>;
+using PointType = gr::Point3D<MESHLAB_SCALAR>;
 
 GlobalRegistrationPlugin::GlobalRegistrationPlugin()
 {
@@ -61,17 +61,17 @@ QString GlobalRegistrationPlugin::filterName(FilterIDType filterId) const
     return QString("Unknown Filter");
 }
 
-GlobalRegistrationPlugin::FilterClass GlobalRegistrationPlugin::getClass(QAction *a)
+GlobalRegistrationPlugin::FilterClass GlobalRegistrationPlugin::getClass(const QAction *a) const
 {
   switch(ID(a))
     {
-        case FP_GLOBAL_REGISTRATION :  return MeshFilterInterface::PointSet;
+        case FP_GLOBAL_REGISTRATION :  return FilterPluginInterface::PointSet;
         default : assert(0);
     }
-    return MeshFilterInterface::Generic;
+    return FilterPluginInterface::Generic;
 }
 
-void GlobalRegistrationPlugin::initParameterSet(QAction *action,MeshDocument &md, RichParameterList & parlst)
+void GlobalRegistrationPlugin::initParameterList(const QAction *action,MeshDocument &md, RichParameterList & parlst)
 {
 
      switch(ID(action))	 {
@@ -93,7 +93,7 @@ void GlobalRegistrationPlugin::initParameterSet(QAction *action,MeshDocument &md
 }
 
 
-using MatrixType = Eigen::Matrix<float, 4, 4>;
+using MatrixType = Eigen::Matrix<MESHLAB_SCALAR, 4, 4>;
 
 struct RealTimeTransformVisitor {
     CMeshO* mesh = nullptr;
@@ -166,10 +166,13 @@ float align ( CMeshO* refMesh, CMeshO* trgMesh,
 
 // The Real Core Function doing the actual mesh processing.
 // Move Vertex of a random quantity
-bool GlobalRegistrationPlugin::applyFilter(QAction */*filter*/,
-                                           MeshDocument &/*md*/,
-                                           const RichParameterList & par,
-                                           vcg::CallBackPos */*cb*/)
+bool GlobalRegistrationPlugin::applyFilter(
+		const QAction* /*filter*/,
+		MeshDocument& /*md*/,
+		std::map<std::string, QVariant>&,
+		unsigned int& /*postConditionMask*/,
+		const RichParameterList& par,
+		vcg::CallBackPos* /*cb*/)
 {
 
     MeshModel *mmref = par.getMesh("refMesh");
@@ -195,7 +198,7 @@ bool GlobalRegistrationPlugin::applyFilter(QAction */*filter*/,
     }
 
     // run
-    Log("Final LCP = %f", score);
+    log("Final LCP = %f", score);
     v.mesh->Tr.FromEigenMatrix(mat);
 
     return true;

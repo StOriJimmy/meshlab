@@ -31,20 +31,21 @@
 
 #include <QObject>
 
-#include <common/interfaces.h>
+#include <common/interfaces/iomesh_plugin_interface.h>
+#include <common/ml_document/mesh_model.h>
 
-class TriIOPlugin : public QObject, public MeshIOInterface
+class TriIOPlugin : public QObject, public IOMeshPluginInterface
 {
   Q_OBJECT
-	MESHLAB_PLUGIN_IID_EXPORTER(MESH_IO_INTERFACE_IID)
-  Q_INTERFACES(MeshIOInterface)
+    MESHLAB_PLUGIN_IID_EXPORTER(IOMESH_PLUGIN_INTERFACE_IID)
+  Q_INTERFACES(IOMeshPluginInterface)
 
   
 public:
 	QString pluginName() const;
-	QList<Format> importFormats() const;
-	QList<Format> exportFormats() const;
-	virtual void GetExportMaskCapability(QString &format, int &capability, int &defaultBits) const;
+	QList<FileFormat> importFormats() const;
+	QList<FileFormat> exportFormats() const;
+	virtual void GetExportMaskCapability(const QString &format, int &capability, int &defaultBits) const;
 	virtual void initPreOpenParameter(const QString &/*format*/, const QString &/*fileName*/, RichParameterList & /*par*/);
 
 	bool open(const QString &formatName, const QString &fileName, MeshModel &m, int& mask, const RichParameterList &, vcg::CallBackPos *cb=0, QWidget *parent=0);

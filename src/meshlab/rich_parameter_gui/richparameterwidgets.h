@@ -1,5 +1,5 @@
 /****************************************************************************
-* VCGLib                                                            o o     *
+* MeshLab                                                           o o     *
 * Visual and Computer Graphics Library                            o     o   *
 *                                                                _   O  _   *
 * Copyright(C) 2004-2020                                           \/)\/    *
@@ -34,8 +34,8 @@
 #include <QComboBox>
 #include <QSlider>
 
-#include "common/interfaces.h"
-#include "common/filter_parameter/rich_parameter_list.h"
+#include <common/parameters/rich_parameter_list.h>
+#include <common/ml_document/cmesh.h>
 
 class RichParameterWidget : public QWidget
 {
@@ -237,7 +237,7 @@ public:
 	Matrix44fWidget(QWidget *p, const RichMatrix44f& rpf, const RichMatrix44f& rdef, QWidget *gla_curr);
 	~Matrix44fWidget();
 	QString paramName;
-	vcg::Matrix44f getValue();
+	Matrix44m getValue();
 
 	void addWidgetToGridLayout(QGridLayout* lay,const int r);
 	void collectWidgetValue();
@@ -258,7 +258,7 @@ protected:
 	QLabel* descLab;
 	QGridLayout* lay44;
 	QVBoxLayout* vlay;
-	vcg::Matrix44f m;
+	Matrix44m m;
 	bool valid;
 };
 
@@ -270,7 +270,7 @@ public:
 	ShotfWidget(QWidget *p, const RichShotf& rpf, const RichShotf& rdef,  QWidget *gla);
 	~ShotfWidget();
 	QString paramName;
-	vcg::Shotf getValue();
+	Shotm getValue();
 
 	void addWidgetToGridLayout(QGridLayout* lay,const int r);
 	void collectWidgetValue();
@@ -286,7 +286,7 @@ signals:
 	void askViewerShot(QString);
 
 protected:
-	vcg::Shotf curShot;
+	Shotm curShot;
 	QLineEdit * shotLE;
 	QPushButton *getShotButton;
 	QComboBox *getShotCombo;
@@ -411,7 +411,6 @@ signals:
 protected:
 	QLineEdit* filename;
 	QPushButton* browse;
-	QString fl;
 	QLabel* descLab;
 	QHBoxLayout* hlay;
 };

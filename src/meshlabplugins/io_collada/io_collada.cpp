@@ -88,6 +88,8 @@
 #include <algorithm>
 
 #include <Qt>
+#include <QDebug>
+#include <QElapsedTimer>
 
 #include "io_collada.h"
 
@@ -217,20 +219,20 @@ QString ColladaIOPlugin::pluginName() const
 	return "IOCollada";
 }
 
-QList<MeshIOInterface::Format> ColladaIOPlugin::importFormats() const
+QList<FileFormat> ColladaIOPlugin::importFormats() const
 {
-	QList<Format> formatList;
-	formatList << Format("Collada File Format"	,tr("DAE"));
+	QList<FileFormat> formatList;
+	formatList << FileFormat("Collada File Format"	,tr("DAE"));
 	return formatList;
 }
 
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> ColladaIOPlugin::exportFormats() const
+QList<FileFormat> ColladaIOPlugin::exportFormats() const
 {
-	QList<Format> formatList;
-	formatList << Format("Collada File Format"	,tr("DAE"));
+	QList<FileFormat> formatList;
+	formatList << FileFormat("Collada File Format"	,tr("DAE"));
 	return formatList;
 }
 
@@ -238,7 +240,7 @@ QList<MeshIOInterface::Format> ColladaIOPlugin::exportFormats() const
 	returns the mask on the basis of the file's type. 
 	otherwise it returns 0 if the file format is unknown
 */
-void ColladaIOPlugin::GetExportMaskCapability(QString &format, int &capability, int &defaultBits)  const 
+void ColladaIOPlugin::GetExportMaskCapability(const QString &format, int &capability, int &defaultBits)  const
 {
 	if(format.toUpper() == tr("DAE")){
 		capability = defaultBits = vcg::tri::io::ExporterDAE<CMeshO>::GetExportMaskCapability();

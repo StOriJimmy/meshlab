@@ -65,23 +65,97 @@ QString FilterFractal::filterInfo(FilterIDType filterId) const
     switch (filterId) {
     case CR_FRACTAL_TERRAIN:
     case FP_FRACTAL_MESH:
-        filename = ":/ff_fractal_description.txt";
+        description =
+                "Generates a fractal terrain perturbation with five different algorithms.<br />"
+                "Some good parameter values to start with are:<br />"
+                "<table align=\"center\">"
+                "    <tr style=\"border:1px solid black\">"
+                "        <td> - </td>"
+                "        <td align=\"center\"> Seed </td>"
+                "        <td align=\"center\"> Octaves </td>"
+                "        <td align=\"center\"> Lacunarity </td>"
+                "        <td align=\"center\"> Fractal increment </td>"
+                "        <td align=\"center\"> Offset </td>"
+                "        <td align=\"center\"> Gain </td>"
+                "    </tr>"
+                "    <tr>"
+                "        <td>fBM</td>"
+                "        <td align=\"center\">1</td>"
+                "        <td align=\"center\">10</td>"
+                "        <td align=\"center\">2</td>"
+                "        <td align=\"center\">1.2</td>"
+                "        <td align=\"center\">-</td>"
+                "        <td align=\"center\">-</td>"
+                "    </tr>"
+                "    <tr>"
+                "        <td>Standard multifractal</td>"
+                "        <td align=\"center\">1</td>"
+                "        <td align=\"center\">8</td>"
+                "        <td align=\"center\">2</td>"
+                "        <td align=\"center\">0.9</td>"
+                "        <td align=\"center\">0.9</td>"
+                "        <td align=\"center\">-</td>"
+                "    </tr>"
+                "    <tr>"
+                "        <td>Heterogeneous multifractal</td>"
+                "        <td align=\"center\">1</td>"
+                "        <td align=\"center\">8</td>"
+                "        <td align=\"center\">3</td>"
+                "        <td align=\"center\">0.9</td>"
+                "        <td align=\"center\">0.4</td>"
+                "        <td align=\"center\">-</td>"
+                "    </tr>"
+                "    <tr>"
+                "        <td>Hybrid multifractal</td>"
+                "        <td align=\"center\">1</td>"
+                "        <td align=\"center\">8</td>"
+                "        <td align=\"center\">4</td>"
+                "        <td align=\"center\">0.1</td>"
+                "        <td align=\"center\">0.3</td>"
+                "        <td align=\"center\">-</td>"
+                "    </tr>"
+                "    <tr>"
+                "        <td>Ridged multifractal</td>"
+                "        <td align=\"center\">2</td>"
+                "        <td align=\"center\">8</td>"
+                "        <td align=\"center\">4</td>"
+                "        <td align=\"center\">0.5</td>"
+                "        <td align=\"center\">0.9</td>"
+                "        <td align=\"center\">2</td>"
+                "    </tr>"
+                "</table>"
+                "<br /><br />"
+                "Detailed algorithms descriptions can be found in:<br />"
+                "<i>Ebert, D.S., Musgrave, F.K., Peachey, D., Perlin, K., and Worley, S.</i><br />"
+                "<b>Texturing and Modeling: A Procedural Approach</b><br />"
+                "Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 2002.<br>";
         break;
     case FP_CRATERS:
-        filename = ":/ff_craters_description.txt";
+        description =
+                "Generates craters onto a mesh using radial functions.<br />"
+                "There must be at least two layers to apply this filter:<br />"
+                "<ul>"
+                "    <li>the layer that contains the target mesh; we assume that this mesh is sufficiently refined;</li>"
+                "    <li>the layer that contains the samples which represent the central points of craters.</li>"
+                "</ul>"
+                "There are three radial functions available to generate craters, two of which are Gaussian and Multiquadric, "
+                "and the third is a variant of multiquadric. Blending functions are also provided to blend "
+                "the crater elevation towards the mesh surface. "
+                "If you want the preview to work, be sure to select the target mesh layer before launching the "
+                "filter. You can select this layer by clicking on it in the layer dialog.";
         break;
     default:
         assert(0); return QString("error");
         break;
     }
 
-    QFile f(filename);
-    if(f.open(QFile::ReadOnly))
-    {
-        QTextStream stream(&f);
-        description = stream.readAll();
-        f.close();
-    }
+//    QFile f(filename);
+//    if(f.open(QFile::ReadOnly))
+//    {
+//        QTextStream stream(&f);
+//        description = stream.readAll();
+//        f.close();
+//    }
 
     if(filterId == FP_FRACTAL_MESH)
     {
@@ -91,7 +165,7 @@ QString FilterFractal::filterInfo(FilterIDType filterId) const
     return description;
 }
 
-void FilterFractal::initParameterSet(QAction* filter,MeshDocument &md, RichParameterList &par)
+void FilterFractal::initParameterList(const QAction* filter,MeshDocument &md, RichParameterList &par)
 {
     switch(ID(filter))
     {
@@ -105,7 +179,7 @@ void FilterFractal::initParameterSet(QAction* filter,MeshDocument &md, RichParam
     }
 }
 
-void FilterFractal::initParameterSetForFractalDisplacement(QAction *filter, MeshDocument &md, RichParameterList &par)
+void FilterFractal::initParameterSetForFractalDisplacement(const QAction *filter, MeshDocument &md, RichParameterList &par)
 {
     bool terrain_filter = (ID(filter) == CR_FRACTAL_TERRAIN);
 
@@ -181,9 +255,9 @@ void FilterFractal::initParameterSetForCratersGeneration(MeshDocument &md, RichP
     return;
 }
 
-bool FilterFractal::applyFilter(QAction* filter, MeshDocument &md, const RichParameterList &par, vcg::CallBackPos* cb)
+bool FilterFractal::applyFilter(const QAction* filter, MeshDocument &md, std::map<std::string, QVariant>&, unsigned int& /*postConditionMask*/, const RichParameterList &par, vcg::CallBackPos* cb)
 {
-  if(this->getClass(filter) == MeshFilterInterface::MeshCreation)
+  if(this->getClass(filter) == FilterPluginInterface::MeshCreation)
        md.addNewMesh("",this->filterName(ID(filter)));
   switch(ID(filter))
     {
@@ -264,22 +338,22 @@ bool FilterFractal::applyFilter(QAction* filter, MeshDocument &md, const RichPar
     return false;
 }
 
-MeshFilterInterface::FilterClass FilterFractal::getClass(QAction* filter)
+FilterPluginInterface::FilterClass FilterFractal::getClass(const QAction* filter) const
 {
     switch(ID(filter)) {
     case CR_FRACTAL_TERRAIN:
-        return MeshFilterInterface::MeshCreation;
+        return FilterPluginInterface::MeshCreation;
         break;
     case FP_FRACTAL_MESH:
     case FP_CRATERS:
-        return MeshFilterInterface::Smoothing;
+        return FilterPluginInterface::Smoothing;
         break;
     default: assert(0);
-        return MeshFilterInterface::Generic;
+        return FilterPluginInterface::Generic;
     }
 }
 
-int FilterFractal::getRequirements(QAction *filter)
+int FilterFractal::getRequirements(const QAction *filter)
 {
     switch(ID(filter)) {
     case CR_FRACTAL_TERRAIN:
@@ -294,7 +368,7 @@ int FilterFractal::getRequirements(QAction *filter)
 	return MeshModel::MM_NONE;
 }
 
-int FilterFractal::postCondition(QAction *filter) const
+int FilterFractal::postCondition(const QAction *filter) const
 {
     switch(ID(filter))
     {
@@ -308,18 +382,18 @@ int FilterFractal::postCondition(QAction *filter) const
 	return MeshModel::MM_ALL;
 }
 
-MeshFilterInterface::FILTER_ARITY FilterFractal::filterArity( QAction* act ) const
+FilterPluginInterface::FILTER_ARITY FilterFractal::filterArity(const QAction* act ) const
 {
     switch(ID(act))
     {
     case FP_FRACTAL_MESH:
-        return MeshFilterInterface::SINGLE_MESH;
+        return FilterPluginInterface::SINGLE_MESH;
     case CR_FRACTAL_TERRAIN:
-        return MeshFilterInterface::NONE;
+        return FilterPluginInterface::NONE;
     case FP_CRATERS:
-        return MeshFilterInterface::VARIABLE;
+        return FilterPluginInterface::VARIABLE;
     }
-    return MeshFilterInterface::NONE;
+    return FilterPluginInterface::NONE;
 }
 
 // ----------------------------------------------------------------------

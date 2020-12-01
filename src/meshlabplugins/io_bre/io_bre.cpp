@@ -99,7 +99,7 @@ int vcg::tri::io::ImporterBRE<OpenMeshType>::Open( MeshModel &meshModel, OpenMes
     if ((result == 0) && (header.Transformed() == true))
     {
       //if transformed before, undo transformation (will be changed soon)
-      Matrix44f inverse = vcg::Inverse(header.Matrix());
+      Matrix44m inverse = vcg::Inverse(header.Matrix());
       m.Tr = inverse;
       return result;
     }
@@ -160,10 +160,10 @@ QString BreMeshIOPlugin::pluginName() const
 	return "IOBRE";
 }
 
-QList<MeshIOInterface::Format> BreMeshIOPlugin::importFormats() const
+QList<FileFormat> BreMeshIOPlugin::importFormats() const
 {
-	QList<Format> formatList;
-	formatList << Format("Breuckmann File Format"	, tr("BRE"));
+	QList<FileFormat> formatList;
+	formatList << FileFormat("Breuckmann File Format"	, tr("BRE"));
 
 	return formatList;
 }
@@ -171,9 +171,9 @@ QList<MeshIOInterface::Format> BreMeshIOPlugin::importFormats() const
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> BreMeshIOPlugin::exportFormats() const
+QList<FileFormat> BreMeshIOPlugin::exportFormats() const
 {
-	QList<Format> formatList;
+	QList<FileFormat> formatList;
 	//formatList << Format("Breuckmann File Format"	, tr("BRE"));
 	return formatList;
 }
@@ -182,7 +182,7 @@ QList<MeshIOInterface::Format> BreMeshIOPlugin::exportFormats() const
 	returns the mask on the basis of the file's type. 
 	otherwise it returns 0 if the file format is unknown
 */
-void BreMeshIOPlugin::GetExportMaskCapability(QString &/*format*/, int &/*capability*/, int &/*defaultBits*/) const
+void BreMeshIOPlugin::GetExportMaskCapability(const QString &/*format*/, int &/*capability*/, int &/*defaultBits*/) const
 {
 	/*if(format.toUpper() == tr("BRE"))
   {
@@ -318,9 +318,9 @@ int vcg::tri::io::BreHeader::Size() const
 }
 
 
-Matrix44f vcg::tri::io::BreHeader::Matrix() const 
+Matrix44m vcg::tri::io::BreHeader::Matrix() const 
 {
-  Matrix44f matrix;
+  Matrix44m matrix;
   float *ptr = (float*) (m_data.data() + 128);
 
   for ( int i=0; i<4; i++) 

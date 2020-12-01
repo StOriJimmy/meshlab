@@ -87,21 +87,21 @@ QString TriIOPlugin::pluginName() const
 	return "IOTRI";
 }
 
-QList<MeshIOInterface::Format> TriIOPlugin::importFormats() const
+QList<FileFormat> TriIOPlugin::importFormats() const
 {
-	QList<Format> formatList;
+	QList<FileFormat> formatList;
 	formatList 
-		<< Format("TRI (photogrammetric reconstructions)", tr("TRI")) 
-	  << Format("ASC (ascii triplets of points)", tr("ASC"));
+		<< FileFormat("TRI (photogrammetric reconstructions)", tr("TRI")) 
+	  << FileFormat("ASC (ascii triplets of points)", tr("ASC"));
 	return formatList;
 }
 
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> TriIOPlugin::exportFormats() const
+QList<FileFormat> TriIOPlugin::exportFormats() const
 {
-	QList<Format> formatList;
+	QList<FileFormat> formatList;
 	return formatList;
 }
 
@@ -109,7 +109,7 @@ QList<MeshIOInterface::Format> TriIOPlugin::exportFormats() const
 	returns the mask on the basis of the file's type. 
 	otherwise it returns 0 if the file format is unknown
 */
-void TriIOPlugin::GetExportMaskCapability(QString &, int &capability, int &defaultBits) const
+void TriIOPlugin::GetExportMaskCapability(const QString &, int &capability, int &defaultBits) const
 {
   capability=defaultBits=0;
 	return;

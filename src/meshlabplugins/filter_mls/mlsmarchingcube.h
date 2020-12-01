@@ -26,6 +26,7 @@
 
 #include <vcg/space/point3.h>
 #include <vcg/space/box3.h>
+#include <common/ml_document/mesh_model.h>
 #include <map>
 #include "mlssurface.h"
 

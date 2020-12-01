@@ -23,7 +23,6 @@
 
 
 
-#include <common/interfaces.h>
 #include <common/GLExtensionsManager.h>
 
 #include "glarea.h"
@@ -35,6 +34,8 @@
 #include <QClipboard>
 #include <QLocale>
 #include <QPainterPath>
+#include <QElapsedTimer>
+#include <QApplication>
 
 #include <wrap/gl/picking.h>
 #include <wrap/qt/trackball.h>
@@ -44,7 +45,6 @@
 #include <wrap/qt/gl_label.h>
 #include <wrap/io_trimesh/export_ply.h>
 #include <wrap/io_trimesh/import_ply.h>
-#include<QOpenGLContext>
 
 
 using namespace std;
@@ -484,7 +484,7 @@ void GLArea::paintEvent(QPaintEvent* /*event*/)
                         QList<QAction *>& tmpset = iPerMeshDecoratorsListMap[mp->id()];
                         for( QList<QAction *>::iterator it = tmpset.begin(); it != tmpset.end();++it)
                         {
-                            MeshDecorateInterface * decorInterface = qobject_cast<MeshDecorateInterface *>((*it)->parent());
+                            DecoratePluginInterface * decorInterface = qobject_cast<DecoratePluginInterface *>((*it)->parent());
                             decorInterface->decorateMesh(*it,*mp,this->glas.currentGlobalParamSet,this,&painter,md()->Log);
                         }
                         MLRenderingData meshdt;
@@ -546,7 +546,7 @@ void GLArea::paintEvent(QPaintEvent* /*event*/)
                     QList<QAction *>& tmpset = iPerMeshDecoratorsListMap[mp->id()];
                     for (QList<QAction *>::iterator it = tmpset.begin(); it != tmpset.end(); ++it)
                     {
-                        MeshDecorateInterface * decorInterface = qobject_cast<MeshDecorateInterface *>((*it)->parent());
+                        DecoratePluginInterface * decorInterface = qobject_cast<DecoratePluginInterface *>((*it)->parent());
                         decorInterface->decorateMesh(*it, *mp, this->glas.currentGlobalParamSet, this, &painter, md()->Log);
                     }
                 }
@@ -567,7 +567,7 @@ void GLArea::paintEvent(QPaintEvent* /*event*/)
 
     foreach(QAction * p, iPerDocDecoratorlist)
     {
-        MeshDecorateInterface * decorInterface = qobject_cast<MeshDecorateInterface *>(p->parent());
+        DecoratePluginInterface * decorInterface = qobject_cast<DecoratePluginInterface *>(p->parent());
         decorInterface->decorateDoc(p, *this->md(), this->glas.currentGlobalParamSet, this, &painter, md()->Log);
     }
 
@@ -1065,7 +1065,7 @@ void GLArea::updateAllDecorators()
 		return;
 	foreach(QAction * p, iPerDocDecoratorlist)
 	{
-		MeshDecorateInterface * decorInterface = qobject_cast<MeshDecorateInterface *>(p->parent());
+		DecoratePluginInterface * decorInterface = qobject_cast<DecoratePluginInterface *>(p->parent());
 		decorInterface->endDecorate(p, *md(), this->glas.currentGlobalParamSet, this);
 		decorInterface->setLog(&md()->Log);
 		decorInterface->startDecorate(p, *md(), this->glas.currentGlobalParamSet, this);
@@ -1151,7 +1151,7 @@ bool GLArea::readyToClose()
     // Now manage the closing of the decorator set;
     foreach(QAction* act, iPerDocDecoratorlist)
     {
-        MeshDecorateInterface* mdec = qobject_cast<MeshDecorateInterface*>(act->parent());
+        DecoratePluginInterface* mdec = qobject_cast<DecoratePluginInterface*>(act->parent());
         mdec->endDecorate(act,*md(),glas.currentGlobalParamSet,this);
         mdec->setLog(NULL);
     }
@@ -1165,7 +1165,7 @@ bool GLArea::readyToClose()
 
     for(QSet<QAction *>::iterator it = dectobeclose.begin();it != dectobeclose.end();++it)
     {
-        MeshDecorateInterface* mdec = qobject_cast<MeshDecorateInterface*>((*it)->parent());
+        DecoratePluginInterface* mdec = qobject_cast<DecoratePluginInterface*>((*it)->parent());
         if (mdec != NULL)
         {
             mdec->endDecorate(*it,*md(),glas.currentGlobalParamSet,this);
@@ -1303,20 +1303,21 @@ void GLArea::wheelEvent(QWheelEvent*e)
 	{
 
 		const int WHEEL_STEP = 120;
-		float notch = e->angleDelta().y()/ float(WHEEL_STEP);
+		float notchX = e->angleDelta().x()/ float(WHEEL_STEP);
+		float notchY = e->angleDelta().y()/ float(WHEEL_STEP);
 		if (glas.wheelDirection)
-			notch *= -1;
+			notchY *= -1;
 		switch(e->modifiers())
 		{
 		case Qt::ControlModifier:
-			clipRatioNear = math::Clamp(clipRatioNear*powf(1.1f, notch),0.01f,500.0f);
+			clipRatioNear = math::Clamp(clipRatioNear*powf(1.1f, notchY),0.01f,500.0f);
 			break;
 		case Qt::ShiftModifier:
-			fov = math::Clamp(fov+1.2f*notch,5.0f,90.0f);
+			fov = math::Clamp(fov+1.2f*notchY,5.0f,90.0f);
 			break;
 		case Qt::AltModifier:
 		{
-			glas.pointSize = math::Clamp(glas.pointSize*powf(1.2f, notch), MLPerViewGLOptions::minPointSize(), MLPerViewGLOptions::maxPointSize());
+			glas.pointSize = math::Clamp(glas.pointSize*powf(1.2f, notchX), MLPerViewGLOptions::minPointSize(), MLPerViewGLOptions::maxPointSize());
 			MLSceneGLSharedDataContext* cont = mvc()->sharedDataContext();
 			if (cont != NULL)
 			{
@@ -1338,9 +1339,9 @@ void GLArea::wheelEvent(QWheelEvent*e)
 		}
 		default:
 			if(isRaster())
-				this->opacity = math::Clamp( opacity*powf(1.2f, notch),0.1f,1.0f);
+				this->opacity = math::Clamp( opacity*powf(1.2f, notchY),0.1f,1.0f);
 			else {
-				trackball.MouseWheel(notch);
+				trackball.MouseWheel(notchY);
 			}
 			break;
 		}
@@ -1402,7 +1403,7 @@ void GLArea::toggleDecorator(QString name)
 void GLArea::updateDecorator(QString name, bool toggle, bool stateToSet)
 {
 	makeCurrent();
-    MeshDecorateInterface *iDecorateTemp = this->mw()->PM.getDecoratorInterfaceByName(name);
+    DecoratePluginInterface *iDecorateTemp = this->mw()->PM.getDecoratorInterfaceByName(name);
     if (!iDecorateTemp) {
         this->Logf(GLLogStream::SYSTEM,"Could not get Decorate interface %s", qUtf8Printable(name));
         this->Log(GLLogStream::SYSTEM,"Known decorate interfaces:");
@@ -1415,7 +1416,7 @@ void GLArea::updateDecorator(QString name, bool toggle, bool stateToSet)
     }
     QAction *action = iDecorateTemp->action(name);
 
-    if(iDecorateTemp->getDecorationClass(action)== MeshDecorateInterface::PerDocument)
+    if(iDecorateTemp->getDecorationClass(action)== DecoratePluginInterface::PerDocument)
     {
         bool found=this->iPerDocDecoratorlist.removeOne(action);
         if(found)
@@ -1441,7 +1442,7 @@ void GLArea::updateDecorator(QString name, bool toggle, bool stateToSet)
         }
     }
 
-    if(iDecorateTemp->getDecorationClass(action)== MeshDecorateInterface::PerMesh)
+    if(iDecorateTemp->getDecorationClass(action)== DecoratePluginInterface::PerMesh)
     {
         MeshModel &currentMeshModel = *mm();
         bool found=this->iCurPerMeshDecoratorList().removeOne(action);
@@ -1760,9 +1761,9 @@ void GLArea::updateCustomSettingValues( const RichParameterList& rps )
     this->update();
 }
 
-void GLArea::initGlobalParameterSet( RichParameterList * defaultGlobalParamSet)
+void GLArea::initGlobalParameterList( RichParameterList * defaultGlobalParamList)
 {
-    GLAreaSetting::initGlobalParameterSet(defaultGlobalParamSet);
+    GLAreaSetting::initGlobalParameterList(defaultGlobalParamList);
 }
 
 //Don't alter the state of the other elements in the visibility map
@@ -2277,7 +2278,7 @@ void GLArea::loadShot(const QPair<Shotm,float> &shotAndScale){
     //Expressing the translation along Z with a scale factor k
     //Point3f p2 = ((trackball.track.Matrix()*(point-trackball.center))- Point3f(0,0,cameraDist));
 
-    ////k is the ratio between the distances along z of two correspondent points (before and after the traslation)
+    ////k is the ratio between the distances along z of two correspondent points (before and after the translation)
     ////from the point of view
     //float k= abs(p2.Z()/p1.Z());
 

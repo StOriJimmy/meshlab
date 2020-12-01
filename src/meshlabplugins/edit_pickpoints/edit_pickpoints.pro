@@ -27,4 +27,3 @@ FORMS += \
 	pickpointsDialog.ui
 
 TARGET = edit_pickpoints
-

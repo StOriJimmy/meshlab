@@ -74,7 +74,7 @@ QString FilterCSG::filterInfo(FilterIDType filterId) const
     }
 }
 
-void FilterCSG::initParameterSet(QAction *action, MeshDocument & md, RichParameterList & parlst)
+void FilterCSG::initParameterList(const QAction *action, MeshDocument & md, RichParameterList & parlst)
 {
     switch (ID(action)) {
     case FP_CSG:
@@ -116,7 +116,7 @@ void FilterCSG::initParameterSet(QAction *action, MeshDocument & md, RichParamet
     }
 }
 
-bool FilterCSG::applyFilter(QAction *filter, MeshDocument &md, const RichParameterList & par, vcg::CallBackPos *cb)
+bool FilterCSG::applyFilter(const QAction *filter, MeshDocument &md, std::map<std::string, QVariant>&, unsigned int& /*postConditionMask*/, const RichParameterList & par, vcg::CallBackPos *cb)
 {
     switch(ID(filter)) {
     case FP_CSG:
@@ -125,31 +125,22 @@ bool FilterCSG::applyFilter(QAction *filter, MeshDocument &md, const RichParamet
             MeshModel *secondMesh = par.getMesh("SecondMesh");
 			if ((firstMesh == NULL) || (secondMesh == NULL))
 			{
-				Log("CSG filter: cannot compute, mesh does not exist");
+				log("CSG filter: cannot compute, mesh does not exist");
 				errorMessage = "cannot compute, mesh does not exist";
 				return false;
 			}
 
 			if ((firstMesh->cm.fn == 0) || (secondMesh->cm.fn == 0))
 			{
-				Log("CSG filter: cannot compute, mesh has no faces");
+				log("CSG filter: cannot compute, mesh has no faces");
 				errorMessage = "cannot compute, mesh has no faces";
 				return false;
 			}
 
 			if (firstMesh == secondMesh){
-				Log("CSG filter: cannot compute, it is the same mesh");
+				log("CSG filter: cannot compute, it is the same mesh");
 				errorMessage = "Cannot compute, it is the same mesh";
 				return false; // can't continue, mesh can't be processed
-			}
-
-			//check if folder is writable
-			QTemporaryFile file("./_tmp_XXXXXX.tmp");
-			if (!file.open())
-			{
-				Log("ERROR - current folder is not writable. CSG needs to save intermediate files in the current working folder. Project and meshes must be in a write-enabled folder. Please save your data in a suitable folder before applying.");
-				errorMessage = "current folder is not writable.<br> CSG needs to save intermediate files in the current working folder.<br> Project and meshes must be in a write-enabled folder.<br> Please save your data in a suitable folder before applying.";
-				return false;
 			}
 
             firstMesh->updateDataMask(MeshModel::MM_FACEFACETOPO | MeshModel::MM_FACENORMAL | MeshModel::MM_FACEQUALITY);
@@ -160,44 +151,46 @@ bool FilterCSG::applyFilter(QAction *filter, MeshDocument &md, const RichParamet
             firstMesh->updateDataMask(MeshModel::MM_FACENORMAL | MeshModel::MM_FACEQUALITY);
             secondMesh->updateDataMask(MeshModel::MM_FACENORMAL | MeshModel::MM_FACEQUALITY);
 
-			MeshModel tmpfirstmesh(firstMesh);
-			for (size_t ii = 0; ii < (size_t)tmpfirstmesh.cm.VN(); ++ii)
-				tmpfirstmesh.cm.vert[ii].P() = tmpfirstmesh.cm.Tr * tmpfirstmesh.cm.vert[ii].P();
-			vcg::tri::UpdateBounding<CMeshO>::Box(tmpfirstmesh.cm);
-			vcg::tri::UpdateNormal<CMeshO>::PerVertexNormalizedPerFaceNormalized(tmpfirstmesh.cm);
+			CMeshO tmpfirstmesh(firstMesh->cm);
+			tmpfirstmesh.face.EnableQuality();
+			for (size_t ii = 0; ii < (size_t)tmpfirstmesh.VN(); ++ii)
+				tmpfirstmesh.vert[ii].P() = tmpfirstmesh.Tr * tmpfirstmesh.vert[ii].P();
+			vcg::tri::UpdateBounding<CMeshO>::Box(tmpfirstmesh);
+			vcg::tri::UpdateNormal<CMeshO>::PerVertexNormalizedPerFaceNormalized(tmpfirstmesh);
 
-			MeshModel tmpsecondmesh(secondMesh);
-			for (size_t ii = 0; ii < (size_t)tmpsecondmesh.cm.VN(); ++ii)
-				tmpsecondmesh.cm.vert[ii].P() = tmpsecondmesh.cm.Tr * tmpsecondmesh.cm.vert[ii].P();
-			vcg::tri::UpdateBounding<CMeshO>::Box(tmpsecondmesh.cm);
-			vcg::tri::UpdateNormal<CMeshO>::PerVertexNormalizedPerFaceNormalized(tmpfirstmesh.cm);
+			CMeshO tmpsecondmesh(secondMesh->cm);
+			tmpsecondmesh.face.EnableQuality();
+			for (size_t ii = 0; ii < (size_t)tmpsecondmesh.VN(); ++ii)
+				tmpsecondmesh.vert[ii].P() = tmpsecondmesh.Tr * tmpsecondmesh.vert[ii].P();
+			vcg::tri::UpdateBounding<CMeshO>::Box(tmpsecondmesh);
+			vcg::tri::UpdateNormal<CMeshO>::PerVertexNormalizedPerFaceNormalized(tmpfirstmesh);
 
 //            typedef CMeshO::ScalarType scalar;
             typedef Intercept<mpq_class,Scalarm> intercept;
             const Scalarm d = par.getFloat("Delta");
             const Point3m delta(d, d, d);
             const int subFreq = par.getInt("SubDelta");
-            Log(GLLogStream::SYSTEM, "Rasterizing first volume...");
-            InterceptVolume<intercept> v = InterceptSet3<intercept>(tmpfirstmesh.cm, delta, subFreq, cb);
-            Log(GLLogStream::SYSTEM, "Rasterizing second volume...");
-            InterceptVolume<intercept> tmp = InterceptSet3<intercept>(tmpsecondmesh.cm, delta, subFreq, cb);
+            log(GLLogStream::SYSTEM, "Rasterizing first volume...");
+            InterceptVolume<intercept> v = InterceptSet3<intercept>(tmpfirstmesh, delta, subFreq, cb);
+            log(GLLogStream::SYSTEM, "Rasterizing second volume...");
+            InterceptVolume<intercept> tmp = InterceptSet3<intercept>(tmpsecondmesh, delta, subFreq, cb);
 
             MeshModel *mesh;
             switch(par.getEnum("Operator")){
             case CSG_OPERATION_INTERSECTION:
-                Log(GLLogStream::SYSTEM, "Intersection...");
+                log(GLLogStream::SYSTEM, "Intersection...");
                 v &= tmp;
                 mesh = md.addNewMesh("","intersection");
                 break;
 
             case CSG_OPERATION_UNION:
-                Log(GLLogStream::SYSTEM, "Union...");
+                log(GLLogStream::SYSTEM, "Union...");
                 v |= tmp;
                 mesh = md.addNewMesh("","union");
                 break;
 
             case CSG_OPERATION_DIFFERENCE:
-                Log(GLLogStream::SYSTEM, "Difference...");
+                log(GLLogStream::SYSTEM, "Difference...");
                 v -= tmp;
                 mesh = md.addNewMesh("","difference");
                 break;
@@ -207,13 +200,13 @@ bool FilterCSG::applyFilter(QAction *filter, MeshDocument &md, const RichParamet
                 return true;
             }
 
-            Log(GLLogStream::SYSTEM, "Building mesh...");
+            log(GLLogStream::SYSTEM, "Building mesh...");
             typedef vcg::intercept::Walker<CMeshO, intercept> MyWalker;
             typedef vcg::tri::MarchingCubes<CMeshO, MyWalker> MyMarchingCubes;
             MyWalker walker;
             MyMarchingCubes mc(mesh->cm, walker);
             walker.BuildMesh<MyMarchingCubes>(mesh->cm, v, mc, cb);
-            Log(GLLogStream::SYSTEM, "Done");
+            log(GLLogStream::SYSTEM, "Done");
 
             vcg::tri::UpdateBounding<CMeshO>::Box(mesh->cm);
             vcg::tri::UpdateNormal<CMeshO>::PerFaceFromCurrentVertexNormal(mesh->cm);

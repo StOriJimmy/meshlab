@@ -3,12 +3,10 @@ include (../general.pri)
 QT += gui
 QT += opengl
 QT += xml
-QT += xmlpatterns
 QT += network
 
 #CONFIG += debug_and_release
 DESTDIR = $$MESHLAB_DISTRIB_DIRECTORY
-EXIF_DIR = ../external/jhead-3.04
 
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x000000
 
@@ -17,8 +15,7 @@ INCLUDEPATH *= \
 	.. \
 	../.. \
 	$$VCGDIR \
-	$$EIGENDIR \
-	$$EXIF_DIR
+	$$EIGENDIR
 
 !CONFIG(system_glew): INCLUDEPATH *= $$GLEWDIR/include
 
@@ -28,16 +25,17 @@ DEPENDPATH += \
 	$$VCGDIR/wrap
 
 HEADERS += \
-	../common/interfaces.h \
 	mainwindow.h \
 	glarea.h \
-	meshlab_settings/meshlabsettingsdialog.h \
-	meshlab_settings/settingdialog.h \
+	dialogs/about_dialog.h \
+	dialogs/congrats_dialog.h \
+	dialogs/filter_script_dialog.h \
+	dialogs/options_dialog.h \
+	dialogs/plugin_info_dialog.h \
+	dialogs/save_snapshot_dialog.h \
+	dialogs/setting_dialog.h \
 	multiViewer_Container.h \
 	glarea_setting.h \
-	plugindialog.h \
-	filterScriptDialog.h \
-	saveSnapshotDialog.h \
 	savemaskexporter.h \
 	changetexturename.h \
 	layerDialog.h \
@@ -59,12 +57,14 @@ SOURCES += \
 	mainwindow_Init.cpp \
 	mainwindow_RunTime.cpp \
 	glarea.cpp \
-	meshlab_settings/meshlabsettingsdialog.cpp \
-	meshlab_settings/settingdialog.cpp \
+	dialogs/about_dialog.cpp \
+	dialogs/congrats_dialog.cpp \
+	dialogs/filter_script_dialog.cpp \
+	dialogs/options_dialog.cpp \
+	dialogs/plugin_info_dialog.cpp \
+	dialogs/save_snapshot_dialog.cpp \
+	dialogs/setting_dialog.cpp \
 	multiViewer_Container.cpp \
-	plugindialog.cpp \
-	filterScriptDialog.cpp \
-	saveSnapshotDialog.cpp \
 	layerDialog.cpp \
 	savemaskexporter.cpp \
 	changetexturename.cpp \
@@ -82,14 +82,14 @@ SOURCES += \
 	rich_parameter_gui/richparameterwidgets.cpp
 
 FORMS += \
+  dialogs/about_dialog.ui \
+  dialogs/congrats_dialog.ui \
+	dialogs/filter_script_dialog.ui \
+	dialogs/plugin_info_dialog.ui \
+	dialogs/save_snapshot_dialog.ui \
 	ui/layerDialog.ui \
-	ui/filterScriptDialog.ui \
-	ui/savesnapshotDialog.ui \
-	ui/aboutDialog.ui \
 	ui/renametexture.ui \
-	ui/savemaskexporter.ui \
-	ui/congratsDialog.ui \
-	ui/filtergui.ui
+	ui/savemaskexporter.ui
 
 RESOURCES += \
 	meshlab.qrc
@@ -113,16 +113,18 @@ ICON = images/meshlab.icns
 
 CONFIG += stl
 
+LIBS += -L$$MESHLAB_DISTRIB_EXT_DIRECTORY
+
 win32-msvc:LIBS += \
-	-L$$MESHLAB_DISTRIB_DIRECTORY/lib/win32-msvc -ljhead \
+	#-L$$MESHLAB_DISTRIB_DIRECTORY/lib/win32-msvc \
 	-L$$MESHLAB_DISTRIB_DIRECTORY/lib -lmeshlab-common -lopengl32 -lGLU32
 
 win32-g++:LIBS += \
-	-L$$MESHLAB_DISTRIB_DIRECTORY/lib/win32-gcc -ljhead \
+	#-L$$MESHLAB_DISTRIB_DIRECTORY/lib/win32-gcc \
 	-L$$MESHLAB_DISTRIB_DIRECTORY/lib -lmeshlab-common -lopengl32 -lGLU32
 
 macx:LIBS += \
-	-L$$MESHLAB_DISTRIB_DIRECTORY/lib/macx64 -ljhead \
+	#-L$$MESHLAB_DISTRIB_DIRECTORY/lib/macx64 \
 	$$MESHLAB_DISTRIB_DIRECTORY/lib/libmeshlab-common.dylib
 
 macx:QMAKE_POST_LINK += "\
@@ -132,8 +134,8 @@ macx:QMAKE_POST_LINK += "\
 
 
 linux:LIBS += \
-	-lmeshlab-common -lGLU \
-	-L$$MESHLAB_DISTRIB_DIRECTORY/lib/linux -ljhead
+	-lmeshlab-common -lGLU #\
+	#-L$$MESHLAB_DISTRIB_DIRECTORY/lib/linux
 
 !CONFIG(system_glew) {
 	INCLUDEPATH *= $$GLEWDIR/include

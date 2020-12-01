@@ -103,10 +103,10 @@ QString TxtIOPlugin::pluginName() const
 	return "IOTXT";
 }
 
-QList<MeshIOInterface::Format> TxtIOPlugin::importFormats() const
+QList<FileFormat> TxtIOPlugin::importFormats() const
 {
-	QList<Format> formatList;
-    formatList << Format("TXT (Generic ASCII point list)", tr("TXT"));
+	QList<FileFormat> formatList;
+    formatList << FileFormat("TXT (Generic ASCII point list)", tr("TXT"));
 
 	return formatList;
 }
@@ -114,9 +114,9 @@ QList<MeshIOInterface::Format> TxtIOPlugin::importFormats() const
 /*
 	returns the list of the file's type which can be exported
 */
-QList<MeshIOInterface::Format> TxtIOPlugin::exportFormats() const
+QList<FileFormat> TxtIOPlugin::exportFormats() const
 {
-	QList<Format> formatList;
+	QList<FileFormat> formatList;
 	return formatList;
 }
 
@@ -124,9 +124,9 @@ QList<MeshIOInterface::Format> TxtIOPlugin::exportFormats() const
 	returns the mask on the basis of the file's type. 
 	otherwise it returns 0 if the file format is unknown
 */
-void TxtIOPlugin::GetExportMaskCapability(QString & /*format*/, int &capability, int &defaultBits) const
+void TxtIOPlugin::GetExportMaskCapability(const QString & /*format*/, int &capability, int &defaultBits) const
 {
-  capability=defaultBits=0;
+	capability=defaultBits=0;
 	return;
 }
  

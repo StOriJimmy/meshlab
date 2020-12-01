@@ -7,7 +7,6 @@ INCLUDEPATH += . .. $$VCGDIR $$EIGENDIR
 SOURCES = mainserver.cpp
 
 RESOURCES = \
-    ../meshlab/meshlab.qrc \
     meshlabserver.qrc
 
 # to add windows icon 
@@ -15,8 +14,7 @@ RC_FILE = ../meshlab/meshlab.rc
 
 QT += \
     xml \
-    opengl \
-    xmlpatterns
+    opengl 
 
 DESTDIR = $$MESHLAB_DISTRIB_DIRECTORY
 
